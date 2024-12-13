@@ -115,7 +115,7 @@ group_id = get_group_id(household_id, access_token)
 #### SCHEDULE GOES HERE ####
 
 # Play Visitors Flea Market Commmercial  
-favorite_playlist_id_1 = "16"
+favorite_playlist_id_1 = "21"
 desired_volume_1 = 90
 load_favorite_playlist(group_id, favorite_playlist_id_1, access_token)
 set_group_volume(group_id, desired_volume_1, access_token)
