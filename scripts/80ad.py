@@ -116,7 +116,7 @@ group_id = get_group_id(household_id, access_token)
 
 # Play Visitors Flea Market Commmercial  
 favorite_playlist_id_1 = "23"
-desired_volume_1 = 90
+desired_volume_1 = 80
 load_favorite_playlist(group_id, favorite_playlist_id_1, access_token)
 set_group_volume(group_id, desired_volume_1, access_token)
 play_group(group_id, access_token)
@@ -126,7 +126,7 @@ time.sleep(13)
 
 # PLAY THE MAIN PLAYLIST
 favorite_playlist_id_2 = "11"
-desired_volume_2 = 65
+desired_volume_2 = 80
 load_favorite_playlist(group_id, favorite_playlist_id_2, access_token)
 set_group_volume(group_id, desired_volume_2, access_token)
 play_group(group_id, access_token)

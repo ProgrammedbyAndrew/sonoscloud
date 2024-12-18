@@ -116,7 +116,7 @@ group_id = get_group_id(household_id, access_token)
 
 # Play the Social Media Commercial  
 favorite_playlist_id_1 = "26"
-desired_volume_1 = 90
+desired_volume_1 = 75
 load_favorite_playlist(group_id, favorite_playlist_id_1, access_token)
 set_group_volume(group_id, desired_volume_1, access_token)
 play_group(group_id, access_token)
@@ -125,7 +125,7 @@ time.sleep(21)
 
 # Play the Social Media Commercial - Spanish 
 favorite_playlist_id_1 = "27"
-desired_volume_1 = 90
+desired_volume_1 = 75
 load_favorite_playlist(group_id, favorite_playlist_id_1, access_token)
 set_group_volume(group_id, desired_volume_1, access_token)
 play_group(group_id, access_token)
