@@ -133,7 +133,7 @@ print("The announceent is playing")
 time.sleep(27)
 
 # PLAY THE MAIN PLAYLIST
-favorite_playlist_id_2 = "11"
+favorite_playlist_id_2 = "33"
 desired_volume_2 = 75
 load_favorite_playlist(group_id, favorite_playlist_id_2, access_token)
 set_group_volume(group_id, desired_volume_2, access_token)
