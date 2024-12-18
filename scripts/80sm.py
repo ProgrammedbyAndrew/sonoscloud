@@ -115,22 +115,22 @@ group_id = get_group_id(household_id, access_token)
 #### SCHEDULE GOES HERE ####
 
 # Play the Social Media Commercial  
-favorite_playlist_id_1 = "26"
+favorite_playlist_id_1 = "30"
 desired_volume_1 = 85
 load_favorite_playlist(group_id, favorite_playlist_id_1, access_token)
 set_group_volume(group_id, desired_volume_1, access_token)
 play_group(group_id, access_token)
 print("The announceent is playing")
-time.sleep(21)
+time.sleep(23)
 
 # Play the Social Media Commercial - Spanish 
-favorite_playlist_id_1 = "27"
+favorite_playlist_id_1 = "31"
 desired_volume_1 = 85
 load_favorite_playlist(group_id, favorite_playlist_id_1, access_token)
 set_group_volume(group_id, desired_volume_1, access_token)
 play_group(group_id, access_token)
 print("The announceent is playing")
-time.sleep(24)
+time.sleep(27)
 
 # PLAY THE MAIN PLAYLIST
 favorite_playlist_id_2 = "11"
