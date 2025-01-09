@@ -134,7 +134,7 @@ time.sleep(39)
 
 
 # PLAY THE MAIN PLAYLIST
-favorite_playlist_id_2 = "33"
+favorite_playlist_id_2 = "34"
 desired_volume_2 = 85
 load_favorite_playlist(group_id, favorite_playlist_id_2, access_token)
 set_group_volume(group_id, desired_volume_2, access_token)
