@@ -181,14 +181,14 @@ async def main():
 
         # Define separate per-zone volume settings.
         announcement_volumes = {
-            "RIGHT_POLE_03": 75,
-            "RIGHT_POLE_01": 75,
-            "LEFT_POLE_01": 75,
-            "RIGHT_POLE_02": 75,
-            "BATHROOM_DOORS": 75,
-            "LEFT_POLE_03": 75,
-            "LEFT_POLE_02": 75,
-            "CENTER_POLE": 75
+            "RIGHT_POLE_03": 85,
+            "RIGHT_POLE_01": 85,
+            "LEFT_POLE_01": 85,
+            "RIGHT_POLE_02": 85,
+            "BATHROOM_DOORS": 85,
+            "LEFT_POLE_03": 85,
+            "LEFT_POLE_02": 85,
+            "CENTER_POLE": 85
         }
         main_volumes = {
             "RIGHT_POLE_03": 65,

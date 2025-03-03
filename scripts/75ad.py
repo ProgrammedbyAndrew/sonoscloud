@@ -183,14 +183,14 @@ async def main():
 
         # Define separate volume settings for announcements and main playlist.
         announcement_volumes = {
-            "RIGHT_POLE_03": 80,
-            "RIGHT_POLE_01": 80,
-            "LEFT_POLE_01": 80,
-            "RIGHT_POLE_02": 80,
-            "BATHROOM_DOORS": 80,
-            "LEFT_POLE_03": 80,
-            "LEFT_POLE_02": 80,
-            "CENTER_POLE": 80
+            "RIGHT_POLE_03": 85,
+            "RIGHT_POLE_01": 85,
+            "LEFT_POLE_01": 85,
+            "RIGHT_POLE_02": 85,
+            "BATHROOM_DOORS": 85,
+            "LEFT_POLE_03": 85,
+            "LEFT_POLE_02": 85,
+            "CENTER_POLE": 85
         }
         main_volumes = {
             "RIGHT_POLE_03": 75,

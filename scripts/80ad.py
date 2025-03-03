@@ -198,7 +198,7 @@ async def main():
             "LEFT_POLE_01": 80,
             "RIGHT_POLE_02": 80,
             "BATHROOM_DOORS": 80,
-            "LEFT_POLE_03": 80,
+            "LEFT_POLE_03": 75,
             "LEFT_POLE_02": 80,
             "CENTER_POLE": 80
         }
