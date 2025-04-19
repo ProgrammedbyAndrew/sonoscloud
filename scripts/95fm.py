@@ -71,11 +71,9 @@ async def poll_for_group(household_id, access_token, player_ids, session, timeou
 
 async def create_group(household_id, player_ids, access_token, session):
     print("Creating a new group with all players...")
-    headers = {
-        "Content-Type": "application/json",
-        "Authorization": f"Bearer {access_token}",
-        "accept": "application/json"
-    }
+    headers = {"Content-Type": "application/json", 
+               "Authorization": f"Bearer {access_token}",
+               "accept": "application/json"}
     url = f"https://api.ws.sonos.com/control/api/v1/households/{household_id}/groups/createGroup"
     payload = {"playerIds": player_ids}
     print(f"Create group request: householdId={household_id}, playerIds={player_ids}")
@@ -173,9 +171,9 @@ async def main():
             "LEFT_POLE_01":  {"id": "RINCON_347E5C0E7E1601400"},
             "RIGHT_POLE_02": {"id": "RINCON_C438758DAF5201400"},
             "BATHROOM_DOORS": {"id": "RINCON_804AF2A48D2F01400"},
-            "LEFT_POLE_03": {"id": "RINCON_C4387580DDA001400"},
-            "LEFT_POLE_02": {"id": "RINCON_C4387557F99B01400"},
-            "CENTER_POLE": {"id": "RINCON_C43875560E2801400"}
+            "LEFT_POLE_03":  {"id": "RINCON_C4387580DDA001400"},
+            "LEFT_POLE_02":  {"id": "RINCON_C4387557F99B01400"},
+            "CENTER_POLE":   {"id": "RINCON_C43875560E2801400"}
         }
         print("Speakers:")
         for name, info in speakers.items():
@@ -183,53 +181,52 @@ async def main():
 
         # Define separate per-zone volume settings.
         announcement_volumes = {
-            "RIGHT_POLE_03": 85,
-            "RIGHT_POLE_01": 85,
-            "LEFT_POLE_01": 85,
-            "RIGHT_POLE_02": 85,
-            "BATHROOM_DOORS": 85,
-            "LEFT_POLE_03": 85,
-            "LEFT_POLE_02": 85,
-            "CENTER_POLE": 85
+            "RIGHT_POLE_03": 90,
+            "RIGHT_POLE_01": 90,
+            "LEFT_POLE_01": 90,
+            "RIGHT_POLE_02": 90,
+            "BATHROOM_DOORS": 90,
+            "LEFT_POLE_03": 90,
+            "LEFT_POLE_02": 90,
+            "CENTER_POLE": 90
         }
         main_volumes = {
-            "RIGHT_POLE_03": 80,
-            "RIGHT_POLE_01": 80,
-            "LEFT_POLE_01": 80,
-            "RIGHT_POLE_02": 80,
-            "BATHROOM_DOORS": 80,
-            "LEFT_POLE_03": 80,
-            "LEFT_POLE_02": 80,
-            "CENTER_POLE": 80
+            "RIGHT_POLE_03": 90,
+            "RIGHT_POLE_01": 90,
+            "LEFT_POLE_01": 90,
+            "RIGHT_POLE_02": 90,
+            "BATHROOM_DOORS": 90,
+            "LEFT_POLE_03": 90,
+            "LEFT_POLE_02": 90,
+            "CENTER_POLE": 90
         }
 
         # ----------------- PLAYBACK SCHEDULE -----------------
-        # 1. Social Media Commercial (English): Favorite Playlist "30"
-        favorite_playlist_id_ann = "30"
+        # 1. Announcement: Visitors Flea Market Commercial (Favorite Playlist "28")
+        favorite_playlist_id_ann = "28"
         await load_favorite_playlist(group_id, favorite_playlist_id_ann, access_token, session)
-        # Set each player's volume concurrently using announcement_volumes.
-        ann_tasks = [
+        announcement_tasks = [
             set_player_volume(info["id"], announcement_volumes[name], access_token, session)
             for name, info in speakers.items()
         ]
-        await asyncio.gather(*ann_tasks)
+        await asyncio.gather(*announcement_tasks)
         await play_group(group_id, access_token, session)
-        print("The announcement (Social Media Commercial) is playing")
-        await asyncio.sleep(23)  # Wait for the announcement to finish
+        print("The announcement (Visitors Flea Market Commercial) is playing")
+        await asyncio.sleep(35)  # Wait for the announcement to finish
 
-        # 2. Social Media Commercial - Spanish: Favorite Playlist "31"
-        favorite_playlist_id_ann_sp = "31"
+        # 2. Announcement - Spanish: Visitors Flea Market Commercial - Spanish (Favorite Playlist "29")
+        favorite_playlist_id_ann_sp = "29"
         await load_favorite_playlist(group_id, favorite_playlist_id_ann_sp, access_token, session)
-        ann_sp_tasks = [
+        announcement_tasks = [
             set_player_volume(info["id"], announcement_volumes[name], access_token, session)
             for name, info in speakers.items()
         ]
-        await asyncio.gather(*ann_sp_tasks)
+        await asyncio.gather(*announcement_tasks)
         await play_group(group_id, access_token, session)
-        print("The announcement (Social Media Commercial - Spanish) is playing")
-        await asyncio.sleep(27)  # Wait for the announcement to finish
+        print("The announcement (Visitors Flea Market Commercial - Spanish) is playing")
+        await asyncio.sleep(39)  # Wait for the announcement to finish
 
-        # 3. Main Playlist: Favorite Playlist "34"
+        # 3. Main Playlist: (Favorite Playlist "34")
         favorite_playlist_id_main = "36"
         await load_favorite_playlist(group_id, favorite_playlist_id_main, access_token, session)
         main_tasks = [

@@ -138,7 +138,7 @@ async def play_group(group_id, access_token, session):
 # ----------------- MAIN ASYNC LOGIC -----------------
 
 async def main():
-    # Credentials and player IDs for grouping.
+    # Credentials and player IDs for grouping
     refresh_token_value = "pWPbYeKxsAsQQGemUiAzuTTxltXOisfu"
     client_id = "1b66f808-68aa-47db-92dd-13ee474757ba"
     client_secret = "61510ebb-aad5-4691-9efa-05c81260df92"
@@ -173,63 +173,64 @@ async def main():
             "LEFT_POLE_01":  {"id": "RINCON_347E5C0E7E1601400"},
             "RIGHT_POLE_02": {"id": "RINCON_C438758DAF5201400"},
             "BATHROOM_DOORS": {"id": "RINCON_804AF2A48D2F01400"},
-            "LEFT_POLE_03": {"id": "RINCON_C4387580DDA001400"},
-            "LEFT_POLE_02": {"id": "RINCON_C4387557F99B01400"},
-            "CENTER_POLE": {"id": "RINCON_C43875560E2801400"}
+            "LEFT_POLE_03":  {"id": "RINCON_C4387580DDA001400"},
+            "LEFT_POLE_02":  {"id": "RINCON_C4387557F99B01400"},
+            "CENTER_POLE":   {"id": "RINCON_C43875560E2801400"}
         }
         print("Speakers:")
         for name, info in speakers.items():
             print(f" - {name}: ID = {info['id']}")
 
-        # Define separate per-zone volume settings.
+        # Define separate volume settings for announcements and main playlist.
         announcement_volumes = {
-            "RIGHT_POLE_03": 85,
-            "RIGHT_POLE_01": 85,
-            "LEFT_POLE_01": 85,
-            "RIGHT_POLE_02": 85,
-            "BATHROOM_DOORS": 85,
-            "LEFT_POLE_03": 85,
-            "LEFT_POLE_02": 85,
-            "CENTER_POLE": 85
+            "RIGHT_POLE_03": 90,
+            "RIGHT_POLE_01": 90,
+            "LEFT_POLE_01": 90,
+            "RIGHT_POLE_02": 90,
+            "BATHROOM_DOORS": 90,
+            "LEFT_POLE_03": 90,
+            "LEFT_POLE_02": 90,
+            "CENTER_POLE": 90
         }
         main_volumes = {
-            "RIGHT_POLE_03": 80,
-            "RIGHT_POLE_01": 80,
-            "LEFT_POLE_01": 80,
-            "RIGHT_POLE_02": 80,
-            "BATHROOM_DOORS": 80,
-            "LEFT_POLE_03": 80,
-            "LEFT_POLE_02": 80,
-            "CENTER_POLE": 80
+            "RIGHT_POLE_03": 90,
+            "RIGHT_POLE_01": 90,
+            "LEFT_POLE_01": 90,
+            "RIGHT_POLE_02": 90,
+            "BATHROOM_DOORS": 90,
+            "LEFT_POLE_03": 90,
+            "LEFT_POLE_02": 90,
+            "CENTER_POLE": 90
         }
 
         # ----------------- PLAYBACK SCHEDULE -----------------
-        # 1. Social Media Commercial (English): Favorite Playlist "30"
-        favorite_playlist_id_ann = "30"
-        await load_favorite_playlist(group_id, favorite_playlist_id_ann, access_token, session)
-        # Set each player's volume concurrently using announcement_volumes.
-        ann_tasks = [
+
+        # 1. Announcement: Load favorite playlist (ID "32") and set volumes concurrently.
+        favorite_playlist_id_announcement = "32"
+        await load_favorite_playlist(group_id, favorite_playlist_id_announcement, access_token, session)
+        announcement_tasks = [
             set_player_volume(info["id"], announcement_volumes[name], access_token, session)
             for name, info in speakers.items()
         ]
-        await asyncio.gather(*ann_tasks)
+        await asyncio.gather(*announcement_tasks)
         await play_group(group_id, access_token, session)
-        print("The announcement (Social Media Commercial) is playing")
-        await asyncio.sleep(23)  # Wait for the announcement to finish
+        print("The announcement is playing")
+        await asyncio.sleep(14)  # Wait for the announcement to finish
 
-        # 2. Social Media Commercial - Spanish: Favorite Playlist "31"
-        favorite_playlist_id_ann_sp = "31"
-        await load_favorite_playlist(group_id, favorite_playlist_id_ann_sp, access_token, session)
-        ann_sp_tasks = [
+        # 2. Announcement: Load favorite playlist (ID "32") and set volumes concurrently.
+        favorite_playlist_id_announcement = "35"
+        await load_favorite_playlist(group_id, favorite_playlist_id_announcement, access_token, session)
+        announcement_tasks = [
             set_player_volume(info["id"], announcement_volumes[name], access_token, session)
             for name, info in speakers.items()
         ]
-        await asyncio.gather(*ann_sp_tasks)
+        await asyncio.gather(*announcement_tasks)
         await play_group(group_id, access_token, session)
-        print("The announcement (Social Media Commercial - Spanish) is playing")
-        await asyncio.sleep(27)  # Wait for the announcement to finish
+        print("The announcement is playing")
+        await asyncio.sleep(15)  # Wait for the announcement to finish
 
-        # 3. Main Playlist: Favorite Playlist "34"
+
+        # 2. Main Playlist: Load favorite playlist (ID "34") and set volumes concurrently.
         favorite_playlist_id_main = "36"
         await load_favorite_playlist(group_id, favorite_playlist_id_main, access_token, session)
         main_tasks = [
