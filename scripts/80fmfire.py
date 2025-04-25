@@ -136,19 +136,19 @@ async def play_group(group_id, access_token, session):
 # ----------------- MAIN ASYNC LOGIC -----------------
 
 async def main():
-    # Credentials and player IDs for grouping.
+    # Credentials and player IDs for grouping
     refresh_token_value = "pWPbYeKxsAsQQGemUiAzuTTxltXOisfu"
     client_id = "1b66f808-68aa-47db-92dd-13ee474757ba"
     client_secret = "61510ebb-aad5-4691-9efa-05c81260df92"
     player_ids = [
         "RINCON_C4387580DC4101400",  # RIGHT_POLE_03
-        "RINCON_C438755B516401400",  # RIGHT_POLE_01
+        "RINCON_804AF2A52DDC01400",  # RIGHT_POLE_01
         "RINCON_347E5C0E7E1601400",  # LEFT_POLE_01
         "RINCON_C438758DAF5201400",  # RIGHT_POLE_02
         "RINCON_804AF2A48D2F01400",  # BATHROOM_DOORS
         "RINCON_C4387580DDA001400",  # LEFT_POLE_03
         "RINCON_C4387557F99B01400",  # LEFT_POLE_02
-        "RINCON_C43875560E2801400"   # CENTER_POLE
+        "RINCON_804AF2AB699401400"   # STAGE
     ]
 
     async with aiohttp.ClientSession() as session:
@@ -165,40 +165,44 @@ async def main():
             print("Group creation successful. Group ID:", group_id)
 
         # Define speakers (for display purposes)
+        
         speakers = {
-            "RIGHT_POLE_03": {"id": "RINCON_C4387580DC4101400"},
-            "RIGHT_POLE_01": {"id": "RINCON_C438755B516401400"},
-            "LEFT_POLE_01":  {"id": "RINCON_347E5C0E7E1601400"},
-            "RIGHT_POLE_02": {"id": "RINCON_C438758DAF5201400"},
             "BATHROOM_DOORS": {"id": "RINCON_804AF2A48D2F01400"},
-            "LEFT_POLE_03":  {"id": "RINCON_C4387580DDA001400"},
-            "LEFT_POLE_02":  {"id": "RINCON_C4387557F99B01400"},
-            "CENTER_POLE":   {"id": "RINCON_C43875560E2801400"}
+            "STAGE": {"id": "RINCON_804AF2AB699401400"},
+            "RIGHT_POLE_01": {"id": "RINCON_804AF2A52DDC01400"},
+            "RIGHT_POLE_02": {"id": "RINCON_C438758DAF5201400"},
+            "RIGHT_POLE_03": {"id": "RINCON_C4387580DC4101400"},
+            "LEFT_POLE_01": {"id": "RINCON_347E5C0E7E1601400"},
+            "LEFT_POLE_02": {"id": "RINCON_C4387557F99B01400"},
+            "LEFT_POLE_03": {"id": "RINCON_C4387580DDA001400"}
         }
         print("Speakers:")
         for name, info in speakers.items():
             print(f" - {name}: ID = {info['id']}")
 
-        # Define separate per-zone volume settings.
+        # Define separate volume settings for announcements and main playlist.
+        
+
         announcement_volumes = {
-            "RIGHT_POLE_03": 85,
-            "RIGHT_POLE_01": 85,
-            "LEFT_POLE_01": 85,
-            "RIGHT_POLE_02": 85,
             "BATHROOM_DOORS": 85,
-            "LEFT_POLE_03": 85,
+            "STAGE": 0,
+            "RIGHT_POLE_01": 85,
+            "RIGHT_POLE_02": 85,
+            "RIGHT_POLE_03": 85,
+            "LEFT_POLE_01": 85,
             "LEFT_POLE_02": 85,
-            "CENTER_POLE": 85
+            "LEFT_POLE_03": 85
         }
+
         main_volumes = {
-            "RIGHT_POLE_03": 80,
-            "RIGHT_POLE_01": 80,
-            "LEFT_POLE_01": 80,
-            "RIGHT_POLE_02": 80,
-            "BATHROOM_DOORS": 80,
-            "LEFT_POLE_03": 80,
-            "LEFT_POLE_02": 80,
-            "CENTER_POLE": 80
+            "BATHROOM_DOORS": 65,
+            "STAGE": 0,
+            "RIGHT_POLE_01": 65,
+            "RIGHT_POLE_02": 65,
+            "RIGHT_POLE_03": 65,
+            "LEFT_POLE_01": 65,
+            "LEFT_POLE_02": 65,
+            "LEFT_POLE_03": 65
         }
 
         # ----------------- PLAYBACK SCHEDULE -----------------
