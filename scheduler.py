@@ -388,6 +388,7 @@ def schedule_tasks():
     schedule.every().sunday.at("22:30").do(run_script, script="75sm.py")  # 5:30 PM EST
     schedule.every().sunday.at("23:00").do(run_script, script="70ad.py")  # 6:00 PM EST
     schedule.every().sunday.at("23:30").do(run_script, script="65sm.py")  # 6:30 PM EST
+    schedule.every().sunday.at("00:00").do(run_script, script="65sm.py")  # 7:00 PM EST
     schedule.every().monday.at("00:30").do(run_script, script="75fm.py")  # 7:30 PM EST
     schedule.every().monday.at("01:00").do(run_script, script="70sm.py")  # 8:00 PM EST
     schedule.every().monday.at("01:30").do(run_script, script="65ad.py")  # 8:30 PM EST

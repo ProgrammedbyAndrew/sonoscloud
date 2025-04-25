@@ -230,7 +230,7 @@ async def main():
         await asyncio.sleep(27)  # Wait for the announcement to finish
 
         # 3. Main Playlist: Favorite Playlist "34"
-        favorite_playlist_id_main = "34"
+        favorite_playlist_id_main = "36"
         await load_favorite_playlist(group_id, favorite_playlist_id_main, access_token, session)
         main_tasks = [
             set_player_volume(info["id"], main_volumes[name], access_token, session)
@@ -241,4 +241,4 @@ async def main():
         print("The Music is Playing")
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    asyncio.run(main()) 
