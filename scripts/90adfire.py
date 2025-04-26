@@ -71,9 +71,11 @@ async def poll_for_group(household_id, access_token, player_ids, session, timeou
 
 async def create_group(household_id, player_ids, access_token, session):
     print("Creating a new group with all players...")
-    headers = {"Content-Type": "application/json", 
-               "Authorization": f"Bearer {access_token}",
-               "accept": "application/json"}
+    headers = {
+        "Content-Type": "application/json",
+        "Authorization": f"Bearer {access_token}",
+        "accept": "application/json"
+    }
     url = f"https://api.ws.sonos.com/control/api/v1/households/{household_id}/groups/createGroup"
     payload = {"playerIds": player_ids}
     print(f"Create group request: householdId={household_id}, playerIds={player_ids}")
@@ -185,7 +187,7 @@ async def main():
 
         announcement_volumes = {
             "BATHROOM_DOORS": 85,
-            "STAGE": 85,
+            "STAGE": 1,
             "RIGHT_POLE_01": 85,
             "RIGHT_POLE_02": 85,
             "RIGHT_POLE_03": 85,
@@ -195,42 +197,44 @@ async def main():
         }
 
         main_volumes = {
-            "BATHROOM_DOORS": 85,
-            "STAGE": 85,
-            "RIGHT_POLE_01": 85,
-            "RIGHT_POLE_02": 85,
-            "RIGHT_POLE_03": 85,
-            "LEFT_POLE_01": 85,
-            "LEFT_POLE_02": 85,
-            "LEFT_POLE_03": 85
+            "BATHROOM_DOORS": 90,
+            "STAGE": 1,
+            "RIGHT_POLE_01": 90,
+            "RIGHT_POLE_02": 90,
+            "RIGHT_POLE_03": 90,
+            "LEFT_POLE_01": 90,
+            "LEFT_POLE_02": 90,
+            "LEFT_POLE_03": 90
         }
 
         # ----------------- PLAYBACK SCHEDULE -----------------
-        # 1. Announcement: Visitors Flea Market Commercial (Favorite Playlist "28")
-        favorite_playlist_id_ann = "28"
-        await load_favorite_playlist(group_id, favorite_playlist_id_ann, access_token, session)
+
+        # 1. Announcement: Load favorite playlist (ID "32") and set volumes concurrently.
+        favorite_playlist_id_announcement = "32"
+        await load_favorite_playlist(group_id, favorite_playlist_id_announcement, access_token, session)
         announcement_tasks = [
             set_player_volume(info["id"], announcement_volumes[name], access_token, session)
             for name, info in speakers.items()
         ]
         await asyncio.gather(*announcement_tasks)
         await play_group(group_id, access_token, session)
-        print("The announcement (Visitors Flea Market Commercial) is playing")
-        await asyncio.sleep(35)  # Wait for the announcement to finish
+        print("The announcement is playing")
+        await asyncio.sleep(14)  # Wait for the announcement to finish
 
-        # 2. Announcement - Spanish: Visitors Flea Market Commercial - Spanish (Favorite Playlist "29")
-        favorite_playlist_id_ann_sp = "29"
-        await load_favorite_playlist(group_id, favorite_playlist_id_ann_sp, access_token, session)
+        # 2. Announcement: Load favorite playlist (ID "32") and set volumes concurrently.
+        favorite_playlist_id_announcement = "35"
+        await load_favorite_playlist(group_id, favorite_playlist_id_announcement, access_token, session)
         announcement_tasks = [
             set_player_volume(info["id"], announcement_volumes[name], access_token, session)
             for name, info in speakers.items()
         ]
         await asyncio.gather(*announcement_tasks)
         await play_group(group_id, access_token, session)
-        print("The announcement (Visitors Flea Market Commercial - Spanish) is playing")
-        await asyncio.sleep(39)  # Wait for the announcement to finish
+        print("The announcement is playing")
+        await asyncio.sleep(15)  # Wait for the announcement to finish
 
-        # 3. Main Playlist: (Favorite Playlist "34")
+
+        # 2. Main Playlist: Load favorite playlist (ID "34") and set volumes concurrently.
         favorite_playlist_id_main = "36"
         await load_favorite_playlist(group_id, favorite_playlist_id_main, access_token, session)
         main_tasks = [

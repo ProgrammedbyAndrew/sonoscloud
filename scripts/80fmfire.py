@@ -185,7 +185,7 @@ async def main():
 
         announcement_volumes = {
             "BATHROOM_DOORS": 85,
-            "STAGE": 0,
+            "STAGE": 1,
             "RIGHT_POLE_01": 85,
             "RIGHT_POLE_02": 85,
             "RIGHT_POLE_03": 85,
@@ -195,14 +195,14 @@ async def main():
         }
 
         main_volumes = {
-            "BATHROOM_DOORS": 65,
-            "STAGE": 0,
-            "RIGHT_POLE_01": 65,
-            "RIGHT_POLE_02": 65,
-            "RIGHT_POLE_03": 65,
-            "LEFT_POLE_01": 65,
-            "LEFT_POLE_02": 65,
-            "LEFT_POLE_03": 65
+            "BATHROOM_DOORS": 80,
+            "STAGE": 1,
+            "RIGHT_POLE_01": 80,
+            "RIGHT_POLE_02": 80,
+            "RIGHT_POLE_03": 80,
+            "LEFT_POLE_01": 80,
+            "LEFT_POLE_02": 80,
+            "LEFT_POLE_03": 80
         }
 
         # ----------------- PLAYBACK SCHEDULE -----------------
