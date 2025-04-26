@@ -481,4 +481,4 @@ schedule_tasks()
 # Run the scheduler loop
 while True:
     schedule.run_pending()
-    time.sleep(1)d
+    time.sleep(1)
