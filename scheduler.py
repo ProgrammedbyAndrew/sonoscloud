@@ -32,6 +32,7 @@ def run_script(script):
 def schedule_tasks():
     """Schedule tasks for the week."""
     # Monday schedule in UTC (EDT = UTC - 4 hours)
+    # Start of Monday
     schedule.every().monday.at("15:00").do(run_script, script="65fm.py")  # 11:00 AM EDT
     schedule.every().monday.at("15:15").do(run_script, script="65sm.py")  # 11:15 AM EDT
     schedule.every().monday.at("15:30").do(run_script, script="65fm.py")  # 11:30 AM EDT
@@ -93,6 +94,7 @@ def schedule_tasks():
     schedule.every().tuesday.at("06:00").do(run_script, script="pause.py")  # 2:00 AM EDT
 
     # Tuesday schedule in UTC (EDT = UTC - 4 hours)
+    # Start of Tuesday
     schedule.every().tuesday.at("15:00").do(run_script, script="65fm.py")  # 11:00 AM EDT
     schedule.every().tuesday.at("15:15").do(run_script, script="65sm.py")  # 11:15 AM EDT
     schedule.every().tuesday.at("15:30").do(run_script, script="65fm.py")  # 11:30 AM EDT
@@ -154,6 +156,7 @@ def schedule_tasks():
     schedule.every().wednesday.at("06:00").do(run_script, script="pause.py")  # 2:00 AM EDT
 
     # Wednesday schedule in UTC (EDT = UTC - 4 hours)
+    # Start of Wednesday
     schedule.every().wednesday.at("15:00").do(run_script, script="65fm.py")  # 11:00 AM EDT
     schedule.every().wednesday.at("15:15").do(run_script, script="65sm.py")  # 11:15 AM EDT
     schedule.every().wednesday.at("15:30").do(run_script, script="65fm.py")  # 11:30 AM EDT
@@ -215,6 +218,7 @@ def schedule_tasks():
     schedule.every().thursday.at("06:00").do(run_script, script="pause.py")  # 2:00 AM EDT
 
     # Thursday schedule in UTC (EDT = UTC - 4 hours)
+    # Start of Thursday
     schedule.every().thursday.at("15:00").do(run_script, script="75fm.py")  # 11:00 AM EDT
     schedule.every().thursday.at("15:15").do(run_script, script="75sm.py")  # 11:15 AM EDT
     schedule.every().thursday.at("15:30").do(run_script, script="75fm.py")  # 11:30 AM EDT
@@ -285,6 +289,7 @@ def schedule_tasks():
     schedule.every().friday.at("08:00").do(run_script, script="pause.py")  # 4:00 AM EDT
 
     # Friday schedule in UTC (EDT = UTC - 4 hours)
+    # Start of Friday
     schedule.every().friday.at("15:00").do(run_script, script="75fm.py")  # 11:00 AM EDT
     schedule.every().friday.at("15:15").do(run_script, script="75sm.py")  # 11:15 AM EDT
     schedule.every().friday.at("15:30").do(run_script, script="75fm.py")  # 11:30 AM EDT
@@ -354,6 +359,7 @@ def schedule_tasks():
     schedule.every().saturday.at("08:00").do(run_script, script="pause.py")  # 4:00 AM EDT
 
     # Saturday schedule in UTC (EDT = UTC - 4 hours)
+    # Start of Saturday
     schedule.every().saturday.at("15:00").do(run_script, script="75fm.py")  # 11:00 AM EDT
     schedule.every().saturday.at("15:15").do(run_script, script="75sm.py")  # 11:15 AM EDT
     schedule.every().saturday.at("15:30").do(run_script, script="75fm.py")  # 11:30 AM EDT
@@ -415,6 +421,7 @@ def schedule_tasks():
     schedule.every().sunday.at("06:00").do(run_script, script="pause.py")  # 2:00 AM EDT
 
     # Sunday schedule in UTC (EDT = UTC - 4 hours)
+    # Start of Sunday
     schedule.every().sunday.at("15:00").do(run_script, script="70fm.py")  # 11:00 AM EDT
     schedule.every().sunday.at("15:15").do(run_script, script="70sm.py")  # 11:15 AM EDT
     schedule.every().sunday.at("15:30").do(run_script, script="70fm.py")  # 11:30 AM EDT
