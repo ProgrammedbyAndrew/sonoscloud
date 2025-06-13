@@ -83,7 +83,8 @@ def schedule_tasks():
     schedule.every().monday.at("02:30").do(run_script, script="75adfire.py")  # 10:30 PM EDT
     schedule.every().monday.at("02:45").do(run_script, script="75adfire.py")  # 10:45 PM EDT
     # 12:00 AM to 2:00 AM EDT (04:00 to 06:00 UTC, next day)
-    schedule.every().tuesday.at("04:00").do(run_script, script="70sm.py")  # 12:00 AM EDT
+    schedule.every().tuesday.at("03:00").do(run_script, script="65sm.py")  # 12:00 AM EDT
+    schedule.every().tuesday.at("04:00").do(run_script, script="65sm.py")  # 12:00 AM EDT
     schedule.every().tuesday.at("04:15").do(run_script, script="65sm.py")  # 12:15 AM EDT
     schedule.every().tuesday.at("04:30").do(run_script, script="65sm.py")  # 12:30 AM EDT
     schedule.every().tuesday.at("04:45").do(run_script, script="65sm.py")  # 12:45 AM EDT
@@ -145,7 +146,8 @@ def schedule_tasks():
     schedule.every().tuesday.at("02:30").do(run_script, script="75adfire.py")  # 10:30 PM EDT
     schedule.every().tuesday.at("02:45").do(run_script, script="75adfire.py")  # 10:45 PM EDT
     # 12:00 AM to 2:00 AM EDT (04:00 to 06:00 UTC, next day)
-    schedule.every().wednesday.at("04:00").do(run_script, script="70sm.py")  # 12:00 AM EDT
+    schedule.every().wednesday.at("03:00").do(run_script, script="65sm.py")  # 12:00 AM EDT
+    schedule.every().wednesday.at("04:00").do(run_script, script="65sm.py")  # 12:00 AM EDT
     schedule.every().wednesday.at("04:15").do(run_script, script="65sm.py")  # 12:15 AM EDT
     schedule.every().wednesday.at("04:30").do(run_script, script="65sm.py")  # 12:30 AM EDT
     schedule.every().wednesday.at("04:45").do(run_script, script="65sm.py")  # 12:45 AM EDT
@@ -207,7 +209,8 @@ def schedule_tasks():
     schedule.every().wednesday.at("02:30").do(run_script, script="75adfire.py")  # 10:30 PM EDT
     schedule.every().wednesday.at("02:45").do(run_script, script="75adfire.py")  # 10:45 PM EDT
     # 12:00 AM to 2:00 AM EDT (04:00 to 06:00 UTC, next day)
-    schedule.every().thursday.at("04:00").do(run_script, script="70sm.py")  # 12:00 AM EDT
+    schedule.every().thursday.at("03:00").do(run_script, script="65sm.py")  # 12:00 AM EDT
+    schedule.every().thursday.at("04:00").do(run_script, script="65sm.py")  # 12:00 AM EDT
     schedule.every().thursday.at("04:15").do(run_script, script="65sm.py")  # 12:15 AM EDT
     schedule.every().thursday.at("04:30").do(run_script, script="65sm.py")  # 12:30 AM EDT
     schedule.every().thursday.at("04:45").do(run_script, script="65sm.py")  # 12:45 AM EDT
@@ -269,7 +272,8 @@ def schedule_tasks():
     schedule.every().thursday.at("02:30").do(run_script, script="75adfire.py")  # 10:30 PM EDT
     schedule.every().thursday.at("02:45").do(run_script, script="75adfire.py")  # 10:45 PM EDT
     # 12:00 AM to 2:00 AM EDT (04:00 to 06:00 UTC, next day)
-    schedule.every().friday.at("04:00").do(run_script, script="70sm.py")  # 12:00 AM EDT
+    schedule.every().friday.at("03:00").do(run_script, script="65sm.py")  # 12:00 AM EDT
+    schedule.every().friday.at("04:00").do(run_script, script="65sm.py")  # 12:00 AM EDT
     schedule.every().friday.at("04:15").do(run_script, script="65sm.py")  # 12:15 AM EDT
     schedule.every().friday.at("04:30").do(run_script, script="65sm.py")  # 12:30 AM EDT
     schedule.every().friday.at("04:45").do(run_script, script="65sm.py")  # 12:45 AM EDT
@@ -278,14 +282,14 @@ def schedule_tasks():
     schedule.every().friday.at("05:30").do(run_script, script="65sm.py")  # 1:30 AM EDT
     schedule.every().friday.at("05:45").do(run_script, script="65sm.py")  # 1:45 AM EDT
     # 2:00 AM to 4:00 AM EDT (06:00 to 08:00 UTC, next day, Friday only)
-    schedule.every().friday.at("06:00").do(run_script, script="65sm.py")  # 2:00 AM EDT
-    schedule.every().friday.at("06:15").do(run_script, script="65sm.py")  # 2:15 AM EDT
-    schedule.every().friday.at("06:30").do(run_script, script="65sm.py")  # 2:30 AM EDT
-    schedule.every().friday.at("06:45").do(run_script, script="65sm.py")  # 2:45 AM EDT
-    schedule.every().friday.at("07:00").do(run_script, script="65sm.py")  # 3:00 AM EDT
-    schedule.every().friday.at("07:15").do(run_script, script="65sm.py")  # 3:15 AM EDT
-    schedule.every().friday.at("07:30").do(run_script, script="65sm.py")  # 3:30 AM EDT
-    schedule.every().friday.at("07:45").do(run_script, script="65sm.py")  # 3:45 AM EDT
+    schedule.every().friday.at("06:00").do(run_script, script="50sm.py")  # 2:00 AM EDT
+    schedule.every().friday.at("06:15").do(run_script, script="50sm.py")  # 2:15 AM EDT
+    schedule.every().friday.at("06:30").do(run_script, script="50sm.py")  # 2:30 AM EDT
+    schedule.every().friday.at("06:45").do(run_script, script="50sm.py")  # 2:45 AM EDT
+    schedule.every().friday.at("07:00").do(run_script, script="50sm.py")  # 3:00 AM EDT
+    schedule.every().friday.at("07:15").do(run_script, script="50sm.py")  # 3:15 AM EDT
+    schedule.every().friday.at("07:30").do(run_script, script="50sm.py")  # 3:30 AM EDT
+    schedule.every().friday.at("07:45").do(run_script, script="50sm.py")  # 3:45 AM EDT
     schedule.every().friday.at("08:00").do(run_script, script="pause.py")  # 4:00 AM EDT
 
     # Friday schedule in UTC (EDT = UTC - 4 hours)
@@ -340,7 +344,8 @@ def schedule_tasks():
     schedule.every().friday.at("02:30").do(run_script, script="90adfire.py")  # 10:30 PM EDT
     schedule.every().friday.at("02:45").do(run_script, script="90adfire.py")  # 10:45 PM EDT
     # 12:00 AM to 4:00 AM EDT (04:00 to 08:00 UTC, next day)
-    schedule.every().saturday.at("04:00").do(run_script, script="75sm.py")  # 12:00 AM EDT
+    schedule.every().saturday.at("04:00").do(run_script, script="70sm.py")  # 12:00 AM EDT
+    schedule.every().saturday.at("04:00").do(run_script, script="70sm.py")  # 12:00 AM EDT
     schedule.every().saturday.at("04:15").do(run_script, script="70sm.py")  # 12:15 AM EDT
     schedule.every().saturday.at("04:30").do(run_script, script="65sm.py")  # 12:30 AM EDT
     schedule.every().saturday.at("04:45").do(run_script, script="65sm.py")  # 12:45 AM EDT
@@ -410,7 +415,8 @@ def schedule_tasks():
     schedule.every().saturday.at("02:30").do(run_script, script="90adfire.py")  # 10:30 PM EDT
     schedule.every().saturday.at("02:45").do(run_script, script="90adfire.py")  # 10:45 PM EDT
     # 12:00 AM to 4:00 AM EDT (04:00 to 08:00 UTC, next day)
-    schedule.every().sunday.at("04:00").do(run_script, script="70sm.py")  # 12:00 AM EDT
+    schedule.every().sunday.at("03:00").do(run_script, script="65sm.py")  # 12:00 AM EDT
+    schedule.every().sunday.at("04:00").do(run_script, script="65sm.py")  # 12:00 AM EDT
     schedule.every().sunday.at("04:15").do(run_script, script="65sm.py")  # 12:15 AM EDT
     schedule.every().sunday.at("04:30").do(run_script, script="65sm.py")  # 12:30 AM EDT
     schedule.every().sunday.at("04:45").do(run_script, script="65sm.py")  # 12:45 AM EDT
@@ -472,7 +478,8 @@ def schedule_tasks():
     schedule.every().sunday.at("02:30").do(run_script, script="90adfire.py")  # 10:30 PM EDT
     schedule.every().sunday.at("02:45").do(run_script, script="90adfire.py")  # 10:45 PM EDT
     # 12:00 AM to 2:00 AM EDT (04:00 to 06:00 UTC, next day)
-    schedule.every().monday.at("04:00").do(run_script, script="70sm.py")  # 12:00 AM EDT
+    schedule.every().monday.at("03:00").do(run_script, script="65sm.py")  # 12:00 AM EDT
+    schedule.every().monday.at("04:00").do(run_script, script="65sm.py")  # 12:00 AM EDT
     schedule.every().monday.at("04:15").do(run_script, script="65sm.py")  # 12:15 AM EDT
     schedule.every().monday.at("04:30").do(run_script, script="65sm.py")  # 12:30 AM EDT
     schedule.every().monday.at("04:45").do(run_script, script="65sm.py")  # 12:45 AM EDT
