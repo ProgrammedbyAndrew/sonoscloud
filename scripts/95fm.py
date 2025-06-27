@@ -141,14 +141,14 @@ async def main():
     client_id = "1b66f808-68aa-47db-92dd-13ee474757ba"
     client_secret = "61510ebb-aad5-4691-9efa-05c81260df92"
     player_ids = [
-        "RINCON_C4387580DC4101400",  # RIGHT_POLE_03
-        "RINCON_804AF2A52DDC01400",  # RIGHT_POLE_01
-        "RINCON_347E5C0E7E1601400",  # LEFT_POLE_01
-        "RINCON_C438758DAF5201400",  # RIGHT_POLE_02
         "RINCON_804AF2A48D2F01400",  # BATHROOM_DOORS
+        "RINCON_804AF2AB699401400",  # STAGE
+        "RINCON_804AF2A52DDC01400",  # RIGHT_POLE_01
+        "RINCON_804AF2A52D7901400",  # RIGHT_POLE_02
+        "RINCON_C4387580DC4101400",  # RIGHT_POLE_03
+        "RINCON_347E5C0E7E1601400",  # LEFT_POLE_01
         "RINCON_C4387580DDA001400",  # LEFT_POLE_03
-        "RINCON_C4387557F99B01400",  # LEFT_POLE_02
-        "RINCON_804AF2AB699401400"   # STAGE
+        "RINCON_C43875560E2801400"   # CENTER_POLE
     ]
 
     async with aiohttp.ClientSession() as session:
@@ -168,21 +168,19 @@ async def main():
         
         speakers = {
             "BATHROOM_DOORS": {"id": "RINCON_804AF2A48D2F01400"},
-            "STAGE": {"id": "RINCON_804AF2AB699401400"},
+            "STAGE":         {"id": "RINCON_804AF2AB699401400"},
             "RIGHT_POLE_01": {"id": "RINCON_804AF2A52DDC01400"},
-            "RIGHT_POLE_02": {"id": "RINCON_C438758DAF5201400"},
+            "RIGHT_POLE_02": {"id": "RINCON_804AF2A52D7901400"},
             "RIGHT_POLE_03": {"id": "RINCON_C4387580DC4101400"},
-            "LEFT_POLE_01": {"id": "RINCON_347E5C0E7E1601400"},
-            "LEFT_POLE_02": {"id": "RINCON_C4387557F99B01400"},
-            "LEFT_POLE_03": {"id": "RINCON_C4387580DDA001400"}
+            "LEFT_POLE_01":  {"id": "RINCON_347E5C0E7E1601400"},
+            "LEFT_POLE_03":  {"id": "RINCON_C4387580DDA001400"},
+            "CENTER_POLE":   {"id": "RINCON_C43875560E2801400"}
         }
         print("Speakers:")
         for name, info in speakers.items():
             print(f" - {name}: ID = {info['id']}")
 
         # Define separate volume settings for announcements and main playlist.
-        
-
         announcement_volumes = {
             "BATHROOM_DOORS": 85,
             "STAGE": 85,
@@ -190,8 +188,8 @@ async def main():
             "RIGHT_POLE_02": 85,
             "RIGHT_POLE_03": 85,
             "LEFT_POLE_01": 85,
-            "LEFT_POLE_02": 85,
-            "LEFT_POLE_03": 85
+            "LEFT_POLE_03": 85,
+            "CENTER_POLE": 85
         }
 
         main_volumes = {
@@ -201,9 +199,10 @@ async def main():
             "RIGHT_POLE_02": 95,
             "RIGHT_POLE_03": 95,
             "LEFT_POLE_01": 95,
-            "LEFT_POLE_02": 95,
-            "LEFT_POLE_03": 95
+            "LEFT_POLE_03": 95,
+            "CENTER_POLE": 95
         }
+
 
         # ----------------- PLAYBACK SCHEDULE -----------------
         # 1. Announcement: Visitors Flea Market Commercial (Favorite Playlist "28")

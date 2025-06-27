@@ -46,8 +46,7 @@ async def get_groups(household_id, access_token, session):
             text = await response.text()
             raise Exception(f"Error getting groups: {response.status} - {text}")
         groups_data = await response.json()
-        groups = groups_data.get('groups', [])
-        return groups
+        return groups_data.get('groups', [])
 
 async def find_existing_group(household_id, access_token, player_ids, session):
     groups = await get_groups(household_id, access_token, session)
@@ -145,11 +144,11 @@ async def main():
     player_ids = [
         "RINCON_C4387580DC4101400",  # RIGHT_POLE_03
         "RINCON_804AF2A52DDC01400",  # RIGHT_POLE_01
-        "RINCON_347E5C0E7E1601400",  # LEFT_POLE_01
-        "RINCON_C438758DAF5201400",  # RIGHT_POLE_02
+        "RINCON_804AF2A52D7901400",  # RIGHT_POLE_02
         "RINCON_804AF2A48D2F01400",  # BATHROOM_DOORS
+        "RINCON_347E5C0E7E1601400",  # LEFT_POLE_01
         "RINCON_C4387580DDA001400",  # LEFT_POLE_03
-        "RINCON_C4387557F99B01400",  # LEFT_POLE_02
+        "RINCON_C43875560E2801400",  # CENTER_POLE
         "RINCON_804AF2AB699401400"   # STAGE
     ]
 
@@ -167,44 +166,41 @@ async def main():
             print("Group creation successful. Group ID:", group_id)
 
         # Define speakers (for display purposes)
-        
         speakers = {
             "BATHROOM_DOORS": {"id": "RINCON_804AF2A48D2F01400"},
-            "STAGE": {"id": "RINCON_804AF2AB699401400"},
-            "RIGHT_POLE_01": {"id": "RINCON_804AF2A52DDC01400"},
-            "RIGHT_POLE_02": {"id": "RINCON_C438758DAF5201400"},
-            "RIGHT_POLE_03": {"id": "RINCON_C4387580DC4101400"},
-            "LEFT_POLE_01": {"id": "RINCON_347E5C0E7E1601400"},
-            "LEFT_POLE_02": {"id": "RINCON_C4387557F99B01400"},
-            "LEFT_POLE_03": {"id": "RINCON_C4387580DDA001400"}
+            "STAGE":           {"id": "RINCON_804AF2AB699401400"},
+            "RIGHT_POLE_01":   {"id": "RINCON_804AF2A52DDC01400"},
+            "RIGHT_POLE_02":   {"id": "RINCON_804AF2A52D7901400"},
+            "RIGHT_POLE_03":   {"id": "RINCON_C4387580DC4101400"},
+            "LEFT_POLE_01":    {"id": "RINCON_347E5C0E7E1601400"},
+            "CENTER_POLE":     {"id": "RINCON_C43875560E2801400"},
+            "LEFT_POLE_03":    {"id": "RINCON_C4387580DDA001400"}
         }
         print("Speakers:")
         for name, info in speakers.items():
             print(f" - {name}: ID = {info['id']}")
 
         # Define separate volume settings for announcements and main playlist.
-        
-
         announcement_volumes = {
             "BATHROOM_DOORS": 50,
-            "STAGE": 50,
-            "RIGHT_POLE_01": 50,
-            "RIGHT_POLE_02": 50,
-            "RIGHT_POLE_03": 50,
-            "LEFT_POLE_01": 50,
-            "LEFT_POLE_02": 50,
-            "LEFT_POLE_03": 50
+            "STAGE":           50,
+            "RIGHT_POLE_01":   50,
+            "RIGHT_POLE_02":   50,
+            "RIGHT_POLE_03":   50,
+            "LEFT_POLE_01":    50,
+            "CENTER_POLE":     50,
+            "LEFT_POLE_03":    50
         }
 
         main_volumes = {
             "BATHROOM_DOORS": 50,
-            "STAGE": 50,
-            "RIGHT_POLE_01": 50,
-            "RIGHT_POLE_02": 50,
-            "RIGHT_POLE_03": 50,
-            "LEFT_POLE_01": 50,
-            "LEFT_POLE_02": 50,
-            "LEFT_POLE_03": 50
+            "STAGE":           50,
+            "RIGHT_POLE_01":   50,
+            "RIGHT_POLE_02":   50,
+            "RIGHT_POLE_03":   50,
+            "LEFT_POLE_01":    50,
+            "CENTER_POLE":     50,
+            "LEFT_POLE_03":    50
         }
 
         # ----------------- PLAYBACK SCHEDULE -----------------
@@ -233,7 +229,7 @@ async def main():
         print("The announcement (Social Media Commercial - Spanish) is playing")
         await asyncio.sleep(27)  # Wait for the announcement to finish
 
-        # 3. Main Playlist: Favorite Playlist "34"
+        # 3. Main Playlist: Favorite Playlist "36"
         favorite_playlist_id_main = "36"
         await load_favorite_playlist(group_id, favorite_playlist_id_main, access_token, session)
         main_tasks = [
@@ -245,4 +241,4 @@ async def main():
         print("The Music is Playing")
 
 if __name__ == "__main__":
-    asyncio.run(main()) 
+    asyncio.run(main())

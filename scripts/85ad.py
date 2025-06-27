@@ -46,8 +46,7 @@ async def get_groups(household_id, access_token, session):
             text = await response.text()
             raise Exception(f"Error getting groups: {response.status} - {text}")
         groups_data = await response.json()
-        groups = groups_data.get('groups', [])
-        return groups
+        return groups_data.get('groups', [])
 
 async def find_existing_group(household_id, access_token, player_ids, session):
     groups = await get_groups(household_id, access_token, session)
@@ -91,17 +90,11 @@ async def create_group(household_id, player_ids, access_token, session):
     if group_id:
         print(f"New group created with group ID: {group_id}")
         return group_id
-    control_id = group_data.get('controlId')
-    if control_id:
-        print(f"Command accepted. Control ID: {control_id}. Polling for group creation...")
-        group_id = await poll_for_group(household_id, access_token, player_ids, session)
-        print(f"New group created with group ID: {group_id}")
-        return group_id
-    print("No group ID or control ID returned, waiting 3 seconds for group formation...")
+    if group_data.get('controlId'):
+        print(f"Command accepted. Polling for group formation...")
+        return await poll_for_group(household_id, access_token, player_ids, session)
     await asyncio.sleep(3)
-    group_id = await poll_for_group(household_id, access_token, player_ids, session)
-    print(f"New group created with group ID: {group_id}")
-    return group_id
+    return await poll_for_group(household_id, access_token, player_ids, session)
 
 async def load_favorite_playlist(group_id, favorite_playlist_id, access_token, session):
     print(f"Loading favorite playlist with ID: {favorite_playlist_id}...")
@@ -142,15 +135,17 @@ async def main():
     refresh_token_value = "pWPbYeKxsAsQQGemUiAzuTTxltXOisfu"
     client_id = "1b66f808-68aa-47db-92dd-13ee474757ba"
     client_secret = "61510ebb-aad5-4691-9efa-05c81260df92"
+
+    # Updated player list
     player_ids = [
-        "RINCON_C4387580DC4101400",  # RIGHT_POLE_03
-        "RINCON_804AF2A52DDC01400",  # RIGHT_POLE_01
-        "RINCON_347E5C0E7E1601400",  # LEFT_POLE_01
-        "RINCON_C438758DAF5201400",  # RIGHT_POLE_02
         "RINCON_804AF2A48D2F01400",  # BATHROOM_DOORS
+        "RINCON_804AF2AB699401400",  # STAGE
+        "RINCON_804AF2A52DDC01400",  # RIGHT_POLE_01
+        "RINCON_804AF2A52D7901400",  # RIGHT_POLE_02
+        "RINCON_C4387580DC4101400",  # RIGHT_POLE_03
+        "RINCON_347E5C0E7E1601400",  # LEFT_POLE_01
         "RINCON_C4387580DDA001400",  # LEFT_POLE_03
-        "RINCON_C4387557F99B01400",  # LEFT_POLE_02
-        "RINCON_804AF2AB699401400"   # STAGE
+        "RINCON_C43875560E2801400"   # CENTER_POLE
     ]
 
     async with aiohttp.ClientSession() as session:
@@ -167,24 +162,21 @@ async def main():
             print("Group creation successful. Group ID:", group_id)
 
         # Define speakers (for display purposes)
-        
         speakers = {
             "BATHROOM_DOORS": {"id": "RINCON_804AF2A48D2F01400"},
-            "STAGE": {"id": "RINCON_804AF2AB699401400"},
+            "STAGE":         {"id": "RINCON_804AF2AB699401400"},
             "RIGHT_POLE_01": {"id": "RINCON_804AF2A52DDC01400"},
-            "RIGHT_POLE_02": {"id": "RINCON_C438758DAF5201400"},
+            "RIGHT_POLE_02": {"id": "RINCON_804AF2A52D7901400"},
             "RIGHT_POLE_03": {"id": "RINCON_C4387580DC4101400"},
-            "LEFT_POLE_01": {"id": "RINCON_347E5C0E7E1601400"},
-            "LEFT_POLE_02": {"id": "RINCON_C4387557F99B01400"},
-            "LEFT_POLE_03": {"id": "RINCON_C4387580DDA001400"}
+            "LEFT_POLE_01":  {"id": "RINCON_347E5C0E7E1601400"},
+            "LEFT_POLE_03":  {"id": "RINCON_C4387580DDA001400"},
+            "CENTER_POLE":   {"id": "RINCON_C43875560E2801400"}
         }
         print("Speakers:")
         for name, info in speakers.items():
             print(f" - {name}: ID = {info['id']}")
 
         # Define separate volume settings for announcements and main playlist.
-        
-
         announcement_volumes = {
             "BATHROOM_DOORS": 85,
             "STAGE": 85,
@@ -192,8 +184,8 @@ async def main():
             "RIGHT_POLE_02": 85,
             "RIGHT_POLE_03": 85,
             "LEFT_POLE_01": 85,
-            "LEFT_POLE_02": 85,
-            "LEFT_POLE_03": 85
+            "LEFT_POLE_03": 85,
+            "CENTER_POLE": 85
         }
 
         main_volumes = {
@@ -203,11 +195,11 @@ async def main():
             "RIGHT_POLE_02": 85,
             "RIGHT_POLE_03": 85,
             "LEFT_POLE_01": 85,
-            "LEFT_POLE_02": 85,
-            "LEFT_POLE_03": 85
+            "LEFT_POLE_03": 85,
+            "CENTER_POLE": 85
         }
-        # ----------------- PLAYBACK SCHEDULE -----------------
 
+        # ----------------- PLAYBACK SCHEDULE -----------------
         # 1. Announcement: Load favorite playlist (ID "32") and set volumes concurrently.
         favorite_playlist_id_announcement = "32"
         await load_favorite_playlist(group_id, favorite_playlist_id_announcement, access_token, session)
@@ -220,7 +212,7 @@ async def main():
         print("The announcement is playing")
         await asyncio.sleep(14)  # Wait for the announcement to finish
 
-        # 2. Announcement: Load favorite playlist (ID "32") and set volumes concurrently.
+        # 2. Announcement: Load favorite playlist (ID "35") and set volumes concurrently.
         favorite_playlist_id_announcement = "35"
         await load_favorite_playlist(group_id, favorite_playlist_id_announcement, access_token, session)
         announcement_tasks = [
@@ -232,8 +224,7 @@ async def main():
         print("The announcement is playing")
         await asyncio.sleep(15)  # Wait for the announcement to finish
 
-
-        # 2. Main Playlist: Load favorite playlist (ID "34") and set volumes concurrently.
+        # 3. Main Playlist: Load favorite playlist (ID "36") and set volumes concurrently.
         favorite_playlist_id_main = "36"
         await load_favorite_playlist(group_id, favorite_playlist_id_main, access_token, session)
         main_tasks = [

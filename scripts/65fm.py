@@ -46,8 +46,7 @@ async def get_groups(household_id, access_token, session):
             text = await response.text()
             raise Exception(f"Error getting groups: {response.status} - {text}")
         groups_data = await response.json()
-        groups = groups_data.get('groups', [])
-        return groups
+        return groups_data.get('groups', [])
 
 async def find_existing_group(household_id, access_token, player_ids, session):
     groups = await get_groups(household_id, access_token, session)
@@ -71,9 +70,11 @@ async def poll_for_group(household_id, access_token, player_ids, session, timeou
 
 async def create_group(household_id, player_ids, access_token, session):
     print("Creating a new group with all players...")
-    headers = {"Content-Type": "application/json", 
-               "Authorization": f"Bearer {access_token}",
-               "accept": "application/json"}
+    headers = {
+        "Content-Type": "application/json",
+        "Authorization": f"Bearer {access_token}",
+        "accept": "application/json"
+    }
     url = f"https://api.ws.sonos.com/control/api/v1/households/{household_id}/groups/createGroup"
     payload = {"playerIds": player_ids}
     print(f"Create group request: householdId={household_id}, playerIds={player_ids}")
@@ -143,11 +144,11 @@ async def main():
     player_ids = [
         "RINCON_C4387580DC4101400",  # RIGHT_POLE_03
         "RINCON_804AF2A52DDC01400",  # RIGHT_POLE_01
-        "RINCON_347E5C0E7E1601400",  # LEFT_POLE_01
-        "RINCON_C438758DAF5201400",  # RIGHT_POLE_02
+        "RINCON_804AF2A52D7901400",  # RIGHT_POLE_02
         "RINCON_804AF2A48D2F01400",  # BATHROOM_DOORS
+        "RINCON_347E5C0E7E1601400",  # LEFT_POLE_01
         "RINCON_C4387580DDA001400",  # LEFT_POLE_03
-        "RINCON_C4387557F99B01400",  # LEFT_POLE_02
+        "RINCON_C43875560E2801400",  # CENTER_POLE
         "RINCON_804AF2AB699401400"   # STAGE
     ]
 
@@ -165,46 +166,44 @@ async def main():
             print("Group creation successful. Group ID:", group_id)
 
         # Define speakers (for display purposes)
-        
         speakers = {
             "BATHROOM_DOORS": {"id": "RINCON_804AF2A48D2F01400"},
-            "STAGE": {"id": "RINCON_804AF2AB699401400"},
-            "RIGHT_POLE_01": {"id": "RINCON_804AF2A52DDC01400"},
-            "RIGHT_POLE_02": {"id": "RINCON_C438758DAF5201400"},
-            "RIGHT_POLE_03": {"id": "RINCON_C4387580DC4101400"},
-            "LEFT_POLE_01": {"id": "RINCON_347E5C0E7E1601400"},
-            "LEFT_POLE_02": {"id": "RINCON_C4387557F99B01400"},
-            "LEFT_POLE_03": {"id": "RINCON_C4387580DDA001400"}
+            "STAGE":          {"id": "RINCON_804AF2AB699401400"},
+            "RIGHT_POLE_01":  {"id": "RINCON_804AF2A52DDC01400"},
+            "RIGHT_POLE_02":  {"id": "RINCON_804AF2A52D7901400"},
+            "RIGHT_POLE_03":  {"id": "RINCON_C4387580DC4101400"},
+            "LEFT_POLE_01":   {"id": "RINCON_347E5C0E7E1601400"},
+            "CENTER_POLE":    {"id": "RINCON_C43875560E2801400"},
+            "LEFT_POLE_03":   {"id": "RINCON_C4387580DDA001400"}
         }
         print("Speakers:")
         for name, info in speakers.items():
             print(f" - {name}: ID = {info['id']}")
 
         # Define separate volume settings for announcements and main playlist.
-        
-
         announcement_volumes = {
             "BATHROOM_DOORS": 85,
-            "STAGE": 85,
-            "RIGHT_POLE_01": 85,
-            "RIGHT_POLE_02": 85,
-            "RIGHT_POLE_03": 85,
-            "LEFT_POLE_01": 85,
-            "LEFT_POLE_02": 85,
-            "LEFT_POLE_03": 85
+            "STAGE":          85,
+            "RIGHT_POLE_01":  85,
+            "RIGHT_POLE_02":  85,
+            "RIGHT_POLE_03":  85,
+            "LEFT_POLE_01":   85,
+            "CENTER_POLE":    85,
+            "LEFT_POLE_03":   85
         }
 
         main_volumes = {
             "BATHROOM_DOORS": 65,
-            "STAGE": 65,
-            "RIGHT_POLE_01": 65,
-            "RIGHT_POLE_02": 65,
-            "RIGHT_POLE_03": 65,
-            "LEFT_POLE_01": 65,
-            "LEFT_POLE_02": 65,
-            "LEFT_POLE_03": 65
+            "STAGE":          65,
+            "RIGHT_POLE_01":  65,
+            "RIGHT_POLE_02":  65,
+            "RIGHT_POLE_03":  65,
+            "LEFT_POLE_01":   65,
+            "CENTER_POLE":    65,
+            "LEFT_POLE_03":   65
         }
-        # ----------------- PLAYBACK SCHEDULE -----------------
+
+         # ----------------- PLAYBACK SCHEDULE -----------------
         # 1. Announcement: Visitors Flea Market Commercial (Favorite Playlist "28")
         favorite_playlist_id_ann = "28"
         await load_favorite_playlist(group_id, favorite_playlist_id_ann, access_token, session)
