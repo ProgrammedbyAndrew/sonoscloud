@@ -173,7 +173,7 @@ async def main():
         announcement_volumes = {
             "BATHROOM_DOORS": 85,
             "STAGE": 1,
-            "RIGHT_POLE_01": 85,
+            "RIGHT_POLE_01": 1,
             "RIGHT_POLE_02": 85,
             "RIGHT_POLE_03": 85,
             "LEFT_POLE_01": 85,
@@ -184,7 +184,7 @@ async def main():
         main_volumes = {
             "BATHROOM_DOORS": 80,
             "STAGE": 1,
-            "RIGHT_POLE_01": 80,
+            "RIGHT_POLE_01": 1,
             "RIGHT_POLE_02": 80,
             "RIGHT_POLE_03": 80,
             "LEFT_POLE_01": 80,
