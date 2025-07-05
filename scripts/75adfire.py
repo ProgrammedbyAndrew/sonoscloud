@@ -201,22 +201,15 @@ async def main():
             print("Group creation successful. Group ID:", group_id)
 
         # 1. First Announcement (Playlist "32")
-        await load_favorite_playlist(group_id, "32", access_token, session)
+        await load_favorite_playlist(group_id, "40", access_token, session)
         await asyncio.gather(*[
             set_player_volume(speakers[name], announcement_volumes[name], access_token, session)
             for name in speakers
         ])
         await play_group(group_id, access_token, session)
-        await asyncio.sleep(14)
+        await asyncio.sleep(22)
 
-        # 2. Second Announcement (Playlist "35")
-        await load_favorite_playlist(group_id, "35", access_token, session)
-        await asyncio.gather(*[
-            set_player_volume(speakers[name], announcement_volumes[name], access_token, session)
-            for name in speakers
-        ])
-        await play_group(group_id, access_token, session)
-        await asyncio.sleep(15)
+    
 
         # 3. Main Playlist (Playlist "36")
         await load_favorite_playlist(group_id, "36", access_token, session)

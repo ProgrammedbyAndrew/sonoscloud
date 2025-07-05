@@ -203,7 +203,7 @@ async def main():
         }
         # ----------------- PLAYBACK SCHEDULE -----------------
         # 1. Announcement: Visitors Flea Market Commercial (Favorite Playlist "28")
-        favorite_playlist_id_ann = "28"
+        favorite_playlist_id_ann = "40"
         await load_favorite_playlist(group_id, favorite_playlist_id_ann, access_token, session)
         announcement_tasks = [
             set_player_volume(info["id"], announcement_volumes[name], access_token, session)
@@ -212,19 +212,9 @@ async def main():
         await asyncio.gather(*announcement_tasks)
         await play_group(group_id, access_token, session)
         print("The announcement (Visitors Flea Market Commercial) is playing")
-        await asyncio.sleep(35)  # Wait for the announcement to finish
+        await asyncio.sleep(22)  # Wait for the announcement to finish
 
-        # 2. Announcement - Spanish: Visitors Flea Market Commercial - Spanish (Favorite Playlist "29")
-        favorite_playlist_id_ann_sp = "29"
-        await load_favorite_playlist(group_id, favorite_playlist_id_ann_sp, access_token, session)
-        announcement_tasks = [
-            set_player_volume(info["id"], announcement_volumes[name], access_token, session)
-            for name, info in speakers.items()
-        ]
-        await asyncio.gather(*announcement_tasks)
-        await play_group(group_id, access_token, session)
-        print("The announcement (Visitors Flea Market Commercial - Spanish) is playing")
-        await asyncio.sleep(39)  # Wait for the announcement to finish
+
 
         # 3. Main Playlist: (Favorite Playlist "34")
         favorite_playlist_id_main = "36"
