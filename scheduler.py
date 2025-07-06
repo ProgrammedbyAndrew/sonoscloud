@@ -119,7 +119,7 @@ def schedule_tasks():
     schedule.every().tuesday.at("22:15").do(run_script, script="75sm.py")  # 6:15 PM EDT
 
     # 7:00 PM to 11:00 PM EDT (23:00 to 03:00 UTC)
-    schedule.every().tuesday.at("22:20").do(run_script, script="75adfire.py") #Fireguy 620pm
+   
     schedule.every().tuesday.at("23:20").do(run_script, script="75adfire.py") #720
     schedule.every().wednesday.at("00:20").do(run_script, script="75adfire.py") #920
     schedule.every().wednesday.at("01:20").do(run_script, script="75adfire.py") #1020
@@ -348,10 +348,10 @@ def schedule_tasks():
     schedule.every().saturday.at("22:15").do(run_script, script="85sm.py")  # 6:15 PM EDT
     # 7:00 PM to 11:00 PM EDT (23:00 to 03:00 UTC)
     
-    schedule.every().saturday.at("23:20").do(run_script, script="80adfire.py") #720
-    schedule.every().sunday.at("00:20").do(run_script, script="80adfire.py") #820
-    schedule.every().sunday.at("01:20").do(run_script, script="75adfire.py") #920
-    schedule.every().sunday.at("02:20").do(run_script, script="75adfire.py")  #1020
+    schedule.every().saturday.at("23:20").do(run_script, script="85adfire.py") #720
+    schedule.every().sunday.at("00:20").do(run_script, script="85adfire.py") #820
+    schedule.every().sunday.at("01:20").do(run_script, script="85adfire.py") #920
+    schedule.every().sunday.at("02:20").do(run_script, script="80adfire.py")  #1020
     schedule.every().sunday.at("03:20").do(run_script, script="75adfire.py")  #1120
     
 
