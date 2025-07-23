@@ -213,6 +213,18 @@ async def main():
         print("The announcement (Visitors Flea Market Commercial) is playing")
         await asyncio.sleep(16)  # Wait for the announcement to finish
 
+        favorite_playlist_id_ann = "42"
+        await load_favorite_playlist(group_id, favorite_playlist_id_ann, access_token, session)
+        announcement_tasks = [
+            set_player_volume(info["id"], announcement_volumes[name], access_token, session)
+            for name, info in speakers.items()
+        ]
+        await asyncio.gather(*announcement_tasks)
+        await play_group(group_id, access_token, session)
+        print("The announcement (Visitors Flea Market Commercial) is playing")
+        await asyncio.sleep(24)  # Wait for the announcement to finish
+        
+
 
         # 3. Main Playlist: (Favorite Playlist "34")
         favorite_playlist_id_main = "36"
