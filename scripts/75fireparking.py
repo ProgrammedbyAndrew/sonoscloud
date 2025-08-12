@@ -207,7 +207,7 @@ async def main():
             for name in speakers
         ])
         await play_group(group_id, access_token, session)
-        await asyncio.sleep(16)
+        await asyncio.sleep(17)
 
           # 1. First Announcement (Playlist "32")
         await load_favorite_playlist(group_id, "42", access_token, session)

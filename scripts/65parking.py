@@ -212,7 +212,17 @@ async def main():
         ])
         await play_group(group_id, access_token, session)
         print("The second announcement is playing")
-        await asyncio.sleep(16)
+        await asyncio.sleep(17)
+
+          # 2. Second announcement (playlist "35")
+        await load_favorite_playlist(group_id, "42", access_token, session)
+        await asyncio.gather(*[
+            set_player_volume(info["id"], announcement_volumes[name], access_token, session)
+            for name, info in speakers.items()
+        ])
+        await play_group(group_id, access_token, session)
+        print("The second announcement is playing")
+        await asyncio.sleep(24)
 
         # 3. Main playlist (playlist "36")
         await load_favorite_playlist(group_id, "36", access_token, session)
