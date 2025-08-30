@@ -137,6 +137,7 @@ async def main():
         "RINCON_804AF2A52D7901400",  # RIGHT_POLE_02
         "RINCON_C4387580DC4101400",  # RIGHT_POLE_03
         "RINCON_347E5C0E7E1601400",  # LEFT_POLE_01
+        "RINCON_C4387557F99B01400",  # LEFT_POLE_02
         "RINCON_C4387580DDA001400",  # LEFT_POLE_03
         "RINCON_C43875560E2801400"   # CENTER_POLE
     ]
@@ -159,6 +160,7 @@ async def main():
             "RIGHT_POLE_02":  {"id": "RINCON_804AF2A52D7901400"},
             "RIGHT_POLE_03":  {"id": "RINCON_C4387580DC4101400"},
             "LEFT_POLE_01":   {"id": "RINCON_347E5C0E7E1601400"},
+            "LEFT_POLE_02":   {"id": "RINCON_C4387557F99B01400"},
             "LEFT_POLE_03":   {"id": "RINCON_C4387580DDA001400"},
             "CENTER_POLE":    {"id": "RINCON_C43875560E2801400"}
         }
@@ -171,6 +173,7 @@ async def main():
             "RIGHT_POLE_02":  85,
             "RIGHT_POLE_03":  85,
             "LEFT_POLE_01":   85,
+            "LEFT_POLE_02":   85,
             "LEFT_POLE_03":   85,
             "CENTER_POLE":    85
         }
@@ -182,6 +185,7 @@ async def main():
             "RIGHT_POLE_02":  80,
             "RIGHT_POLE_03":  80,
             "LEFT_POLE_01":   80,
+            "LEFT_POLE_02":   80,
             "LEFT_POLE_03":   80,
             "CENTER_POLE":    80
         }
