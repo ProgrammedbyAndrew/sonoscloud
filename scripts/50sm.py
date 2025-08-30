@@ -147,6 +147,7 @@ async def main():
         "RINCON_804AF2A52D7901400",  # RIGHT_POLE_02
         "RINCON_804AF2A48D2F01400",  # BATHROOM_DOORS
         "RINCON_347E5C0E7E1601400",  # LEFT_POLE_01
+        "RINCON_C4387557F99B01400",  # LEFT_POLE_02
         "RINCON_C4387580DDA001400",  # LEFT_POLE_03
         "RINCON_C43875560E2801400",  # CENTER_POLE
         "RINCON_804AF2AB699401400"   # STAGE
@@ -173,6 +174,7 @@ async def main():
             "RIGHT_POLE_02":   {"id": "RINCON_804AF2A52D7901400"},
             "RIGHT_POLE_03":   {"id": "RINCON_C4387580DC4101400"},
             "LEFT_POLE_01":    {"id": "RINCON_347E5C0E7E1601400"},
+            "LEFT_POLE_02":   {"id": "RINCON_C4387557F99B01400"},
             "CENTER_POLE":     {"id": "RINCON_C43875560E2801400"},
             "LEFT_POLE_03":    {"id": "RINCON_C4387580DDA001400"}
         }
@@ -188,6 +190,7 @@ async def main():
             "RIGHT_POLE_02":   50,
             "RIGHT_POLE_03":   50,
             "LEFT_POLE_01":    50,
+            "LEFT_POLE_02":   50,
             "CENTER_POLE":     50,
             "LEFT_POLE_03":    50
         }
@@ -199,6 +202,7 @@ async def main():
             "RIGHT_POLE_02":   50,
             "RIGHT_POLE_03":   50,
             "LEFT_POLE_01":    50,
+            "LEFT_POLE_02":   50,
             "CENTER_POLE":     50,
             "LEFT_POLE_03":    50
         }
