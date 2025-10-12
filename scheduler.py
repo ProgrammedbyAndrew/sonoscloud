@@ -65,6 +65,7 @@ def schedule_tasks():
     schedule.every().monday.at("22:15").do(run_script, script="75sm.py")  # 6:15 PM EDT
 
     # 7:00 PM to 11:00 PM EDT (23:00 to 03:00 UTC)
+    schedule.every().monday.at("22:50").do(run_script, script="75fireparking.py") #PARKING
     schedule.every().monday.at("23:00").do(run_script, script="75fireparking.py") #PARKING
     schedule.every().monday.at("23:50").do(run_script, script="75adfire.py") #750
     schedule.every().tuesday.at("00:00").do(run_script, script="75fireparking.py") #PARKING
@@ -123,6 +124,7 @@ def schedule_tasks():
     schedule.every().tuesday.at("22:15").do(run_script, script="75sm.py")  # 6:15 PM EDT
 
     # 7:00 PM to 11:00 PM EDT (23:00 to 03:00 UTC)
+    schedule.every().tuesday.at("22:50").do(run_script, script="75fireparking.py") #PARKING
     schedule.every().tuesday.at("23:00").do(run_script, script="75fireparking.py") #PARKING
     schedule.every().tuesday.at("23:50").do(run_script, script="75adfire.py") #750
     schedule.every().wednesday.at("00:00").do(run_script, script="75fireparking.py") #PARKING
@@ -180,6 +182,7 @@ def schedule_tasks():
     schedule.every().wednesday.at("22:15").do(run_script, script="80sm.py")  # 6:15 PM EDT
 
     # 7:00 PM to 11:00 PM EDT (23:00 to 03:00 UTC)
+    schedule.every().wednesday.at("22:50").do(run_script, script="75parkingfire.py") #PARKING
     schedule.every().wednesday.at("23:00").do(run_script, script="75parkingfire.py") #PARKING
     schedule.every().wednesday.at("23:50").do(run_script, script="75adfire.py") #750
     schedule.every().thursday.at("00:00").do(run_script, script="75parkingfire.py") #PARKING
@@ -238,6 +241,7 @@ def schedule_tasks():
     schedule.every().thursday.at("22:15").do(run_script, script="80sm.py")  # 6:15 PM EDT
 
     # 7:00 PM to 11:00 PM EDT (23:00 to 03:00 UTC)
+    schedule.every().thursday.at("22:50").do(run_script, script="85fireparking.py") #PARKING
     schedule.every().thursday.at("23:00").do(run_script, script="85fireparking.py") #PARKING
     schedule.every().thursday.at("23:50").do(run_script, script="85adfire.py") #750
     schedule.every().friday.at("00:00").do(run_script, script="85fireparking.py") #PARKING
@@ -302,7 +306,8 @@ def schedule_tasks():
     schedule.every().friday.at("22:00").do(run_script, script="90parking.py")  # 6:00 PM EDT
     schedule.every().friday.at("22:15").do(run_script, script="90sm.py")  # 6:15 PM EDT
     # 7:00 PM to 11:00 PM EDT (23:00 to 03:00 UTC)
-    
+
+    schedule.every().friday.at("22:50").do(run_script, script="85fireparking.py") #PARKING
     schedule.every().friday.at("23:00").do(run_script, script="85fireparking.py") #PARKING
     schedule.every().friday.at("23:50").do(run_script, script="85adfire.py") #750
     schedule.every().saturday.at("00:00").do(run_script, script="85fireparking.py") #PARKING
@@ -369,6 +374,7 @@ def schedule_tasks():
     schedule.every().saturday.at("22:15").do(run_script, script="85sm.py")  # 6:15 PM EDT
     # 7:00 PM to 11:00 PM EDT (23:00 to 03:00 UTC)
     
+    schedule.every().saturday.at("22:50").do(run_script, script="85fireparking.py") #fire parking
     schedule.every().saturday.at("23:00").do(run_script, script="85fireparking.py") #PARKING
     schedule.every().saturday.at("23:50").do(run_script, script="85adfire.py") #750
     schedule.every().sunday.at("00:00").do(run_script, script="85fireparking.py") #PARKING
@@ -426,10 +432,10 @@ def schedule_tasks():
     schedule.every().sunday.at("21:30").do(run_script, script="85sm.py")  # 5:30 PM EDT
     schedule.every().sunday.at("21:45").do(run_script, script="85sm.py")  # 5:45 PM EDT
     schedule.every().sunday.at("22:00").do(run_script, script="85parking.py")  # 6:00 PM EDT
-    schedule.every().sunday.at("22:15").do(run_script, script="85sm.py")  # 6:15 PM EDT
+  
 
      # 7:00 PM to 11:00 PM EDT (23:00 to 03:00 UTC)
-    
+    schedule.every().sunday.at("22:50").do(run_script, script="85fireparking.py") #Fire Parking
     schedule.every().sunday.at("23:20").do(run_script, script="85fireparking.py") #PARKING
     schedule.every().sunday.at("23:50").do(run_script, script="80adfire.py") #750
     schedule.every().monday.at("00:00").do(run_script, script="85fireparking.py") #PARKING
