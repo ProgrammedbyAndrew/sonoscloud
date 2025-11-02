@@ -8,8 +8,7 @@ from pathlib import Path
 from datetime import datetime, timedelta
 
 # -----------------------------------------------------------------------------
-# CONFIG: set to -1 to start & end FIRE blocks 1 hour earlier (e.g., DST change)
-#         set to 0 to use original times.
+# CONFIG: FIRE program only — set to -1 to start & end FIRE blocks 1 hour earlier (e.g., DST); set to 0 to use original times.
 # -----------------------------------------------------------------------------
 FIRE_SHIFT_HOURS = -1         # <- change to -1 to start at 5:45pm instead of 6:45pm
 
@@ -22,6 +21,15 @@ logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(levelname)s - %(message)s"
 )
+
+"""
+# ===================== EASY EDIT ZONE =====================
+# 1) To move FIRE SHOW earlier/later: set FIRE_SHIFT_HOURS to -1 or 0 above.
+# 2) To add/edit FIRE blocks: edit FIRE_BLOCKS below (leave times as the ORIGINAL unshifted UTC values).
+# 3) To add/edit regular (non-fire) programming: edit SCHEDULES below.
+#    Tip: You can copy/paste rows like ("20:15", "75sm.py").
+# ==========================================================
+"""
 
 def run_script(script):
     """Run the specified Python script under scripts/."""
@@ -45,22 +53,34 @@ def schedule_rows(rows, day_attr):
         day_obj.at(tm).do(run_script, script=script_name)
 
 # -------------------------
-# Helpers for FIRE block shifting
+# Helpers for FIRE block shifting (with day rollover)
 # -------------------------
-def _shift_time_str(hhmm: str, hours: int) -> str:
-    """Shift 'HH:MM' by N hours (can be negative), wrap 24h, return 'HH:MM'."""
-    if hours == 0:
-        return hhmm
-    # Use a dummy date to handle wrap-around cleanly
-    base = datetime(2000, 1, 1, int(hhmm[0:2]), int(hhmm[3:5]))
-    shifted = base + timedelta(hours=hours)
-    return shifted.strftime("%H:%M")
+DAY_ORDER = ["monday","tuesday","wednesday","thursday","friday","saturday","sunday"]
+PREV_DAY = {d: DAY_ORDER[(i-1) % 7] for i, d in enumerate(DAY_ORDER)}
+NEXT_DAY = {d: DAY_ORDER[(i+1) % 7] for i, d in enumerate(DAY_ORDER)}
 
-def shift_rows(rows, hours):
-    """Apply hour shift to a list of (HH:MM, script) pairs."""
-    if not hours:
-        return rows
-    return [(_shift_time_str(t, hours), s) for t, s in rows]
+def _shift_with_dayroll(hhmm: str, hours: int):
+    """Return (day_delta, HH:MM) after shifting by 'hours' with 24h wrap."""
+    if hours == 0:
+        return 0, hhmm
+    base = datetime(2000, 1, 1, int(hhmm[:2]), int(hhmm[3:5]))
+    shifted = base + timedelta(hours=hours)
+    day_delta = (shifted.date() - base.date()).days  # -1, 0, or +1
+    return day_delta, shifted.strftime("%H:%M")
+
+def schedule_fire_rows(rows, anchor_day: str, hours_shift: int):
+    """
+    Schedule FIRE rows for a given anchor day.
+    Applies hour shift and moves items across days when times cross midnight.
+    """
+    for tm, script_name in rows:
+        delta, shifted_tm = _shift_with_dayroll(tm, hours_shift)
+        target_day = anchor_day
+        if delta == -1:
+            target_day = PREV_DAY[anchor_day]
+        elif delta == 1:
+            target_day = NEXT_DAY[anchor_day]
+        getattr(schedule.every(), target_day).at(shifted_tm).do(run_script, script=script_name)
 
 # --------------------------------------
 # FIRE SHOW blocks (evening through early morning)
@@ -116,7 +136,7 @@ FIRE_BLOCKS = {
     "friday": [
         ("22:50", "85fireparking.py"), ("23:00", "85fireparking.py"), ("23:50", "85adfire.py"),
     ],
-    "Saturday_early": [
+    "saturday_early": [
         ("00:00", "85fireparking.py"), ("00:50", "85adfire.py"),
         ("01:00", "85fireparking.py"), ("01:50", "80adfire.py"),
         ("02:00", "85fireparking.py"), ("02:50", "80adfire.py"),
@@ -149,6 +169,7 @@ FIRE_BLOCKS = {
 # --------------------------------------
 # NON-FIRE weekly schedules (unchanged behavior)
 # --------------------------------------
+# You can add commercials or swap scripts by editing the tuples below; format is ("HH:MM", "script.py").
 SCHEDULES = {
     "monday": [
         ("15:00", "65fm.py"), ("15:15", "65sm.py"), ("15:30", "65fm.py"), ("15:45", "65sm.py"),
@@ -246,31 +267,38 @@ SCHEDULES = {
 }
 
 def schedule_tasks():
-    # Regular (non-fire) weekly schedules
+    # 1) Regular (non-fire) weekly schedules — unchanged
     for day in ("monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"):
         schedule_rows(SCHEDULES[day], day)
 
-    # Fire-show blocks with optional hour shift
-    schedule_rows(shift_rows(FIRE_BLOCKS["monday"], FIRE_SHIFT_HOURS), "monday")
-    schedule_rows(shift_rows(FIRE_BLOCKS["tuesday_early"], FIRE_SHIFT_HOURS), "tuesday")
+    # 2) Fire-show blocks — shift ONLY these using FIRE_SHIFT_HOURS
+    # Mon evening -> Tue early
+    schedule_fire_rows(FIRE_BLOCKS["monday"],        "monday",   FIRE_SHIFT_HOURS)
+    schedule_fire_rows(FIRE_BLOCKS["tuesday_early"], "tuesday",  FIRE_SHIFT_HOURS)
 
-    schedule_rows(shift_rows(FIRE_BLOCKS["tuesday"], FIRE_SHIFT_HOURS), "tuesday")
-    schedule_rows(shift_rows(FIRE_BLOCKS["wednesday_early"], FIRE_SHIFT_HOURS), "wednesday")
+    # Tue evening -> Wed early
+    schedule_fire_rows(FIRE_BLOCKS["tuesday"],         "tuesday",   FIRE_SHIFT_HOURS)
+    schedule_fire_rows(FIRE_BLOCKS["wednesday_early"], "wednesday", FIRE_SHIFT_HOURS)
 
-    schedule_rows(shift_rows(FIRE_BLOCKS["wednesday"], FIRE_SHIFT_HOURS), "wednesday")
-    schedule_rows(shift_rows(FIRE_BLOCKS["thursday_early"], FIRE_SHIFT_HOURS), "thursday")
+    # Wed evening -> Thu early
+    schedule_fire_rows(FIRE_BLOCKS["wednesday"],     "wednesday", FIRE_SHIFT_HOURS)
+    schedule_fire_rows(FIRE_BLOCKS["thursday_early"],"thursday",  FIRE_SHIFT_HOURS)
 
-    schedule_rows(shift_rows(FIRE_BLOCKS["thursday"], FIRE_SHIFT_HOURS), "thursday")
-    schedule_rows(shift_rows(FIRE_BLOCKS["friday_early"], FIRE_SHIFT_HOURS), "friday")
+    # Thu evening -> Fri early
+    schedule_fire_rows(FIRE_BLOCKS["thursday"],      "thursday", FIRE_SHIFT_HOURS)
+    schedule_fire_rows(FIRE_BLOCKS["friday_early"],  "friday",   FIRE_SHIFT_HOURS)
 
-    schedule_rows(shift_rows(FIRE_BLOCKS["friday"], FIRE_SHIFT_HOURS), "friday")
-    schedule_rows(shift_rows(FIRE_BLOCKS["Saturday_early"], FIRE_SHIFT_HOURS), "saturday")
+    # Fri evening -> Sat early
+    schedule_fire_rows(FIRE_BLOCKS["friday"],          "friday",   FIRE_SHIFT_HOURS)
+    schedule_fire_rows(FIRE_BLOCKS["saturday_early"],  "saturday", FIRE_SHIFT_HOURS)
 
-    schedule_rows(shift_rows(FIRE_BLOCKS["saturday"], FIRE_SHIFT_HOURS), "saturday")
-    schedule_rows(shift_rows(FIRE_BLOCKS["sunday_early"], FIRE_SHIFT_HOURS), "sunday")
+    # Sat evening -> Sun early
+    schedule_fire_rows(FIRE_BLOCKS["saturday"],      "saturday", FIRE_SHIFT_HOURS)
+    schedule_fire_rows(FIRE_BLOCKS["sunday_early"],  "sunday",   FIRE_SHIFT_HOURS)
 
-    schedule_rows(shift_rows(FIRE_BLOCKS["sunday"], FIRE_SHIFT_HOURS), "sunday")
-    schedule_rows(shift_rows(FIRE_BLOCKS["monday_early"], FIRE_SHIFT_HOURS), "monday")
+    # Sun evening -> Mon early
+    schedule_fire_rows(FIRE_BLOCKS["sunday"],        "sunday",   FIRE_SHIFT_HOURS)
+    schedule_fire_rows(FIRE_BLOCKS["monday_early"],  "monday",   FIRE_SHIFT_HOURS)
 
 def _graceful_exit(sig, _frame):
     logging.info(f"Received signal {sig}. Exiting scheduler loop.")
@@ -281,6 +309,8 @@ signal.signal(signal.SIGTERM, _graceful_exit)
 
 # Register jobs
 schedule_tasks()
+
+logging.info(f"Scheduler started. FIRE_SHIFT_HOURS={FIRE_SHIFT_HOURS} (fire program only)")
 
 # Run loop
 while True:
