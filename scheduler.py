@@ -6,7 +6,6 @@ import os
 import signal
 from pathlib import Path
 from datetime import datetime, timedelta
-from zoneinfo import ZoneInfo
 
 # -----------------------------------------------------------------------------
 # CONFIG
