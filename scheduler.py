@@ -6,11 +6,17 @@ import os
 import signal
 from pathlib import Path
 from datetime import datetime, timedelta
+from zoneinfo import ZoneInfo
 
 # -----------------------------------------------------------------------------
 # CONFIG: FIRE program only — set to -1 to start & end FIRE blocks 1 hour earlier (e.g., DST); set to 0 to use original times.
 # -----------------------------------------------------------------------------
 FIRE_SHIFT_HOURS = -1         # <- change to -1 to start at 5:45pm instead of 6:45pm
+
+# Timezone / data-frame config
+USE_LOCAL_TZ = True                 # If True, scheduler runs in LOCAL_TZ and data times below are auto-converted
+LOCAL_TZ = 'America/New_York'       # Orlando time
+DATA_TIMES_ARE_UTC = True           # The times in FIRE_BLOCKS and SCHEDULES below are authored in UTC
 
 # -------------------------
 # Logging & setup
@@ -21,6 +27,15 @@ logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(levelname)s - %(message)s"
 )
+
+# Apply local timezone to the process so the schedule library interprets times as LOCAL_TZ
+if USE_LOCAL_TZ:
+    try:
+        os.environ['TZ'] = LOCAL_TZ
+        time.tzset()  # works on Unix-like systems
+        logging.info(f"Timezone set to {LOCAL_TZ} for scheduling.")
+    except Exception as e:
+        logging.warning(f"Could not set TZ env or tzset(): {e}")
 
 """
 # ===================== EASY EDIT ZONE =====================
@@ -46,14 +61,9 @@ def run_script(script):
         err = f"Unexpected error running script {script}: {e}"
         print(err); logging.error(err)
 
-def schedule_rows(rows, day_attr):
-    """Register a list of (HH:MM, script) rows for a given day attribute on schedule."""
-    day_obj = getattr(schedule.every(), day_attr)
-    for tm, script_name in rows:
-        day_obj.at(tm).do(run_script, script=script_name)
 
 # -------------------------
-# Helpers for FIRE block shifting (with day rollover)
+# Helpers for shifting with day rollover (UTC->local and FIRE adjustments)
 # -------------------------
 DAY_ORDER = ["monday","tuesday","wednesday","thursday","friday","saturday","sunday"]
 PREV_DAY = {d: DAY_ORDER[(i-1) % 7] for i, d in enumerate(DAY_ORDER)}
@@ -68,10 +78,20 @@ def _shift_with_dayroll(hhmm: str, hours: int):
     day_delta = (shifted.date() - base.date()).days  # -1, 0, or +1
     return day_delta, shifted.strftime("%H:%M")
 
-def schedule_fire_rows(rows, anchor_day: str, hours_shift: int):
+
+def _utc_to_local_hours() -> int:
+    """Return the integer hours offset to convert UTC times to LOCAL_TZ at runtime (handles DST)."""
+    try:
+        off = datetime.now(ZoneInfo(LOCAL_TZ)).utcoffset()
+        return int(round(off.total_seconds() / 3600))
+    except Exception as e:
+        logging.warning(f"Falling back to -5h offset (EST) due to error computing tz offset: {e}")
+        return -5
+
+def schedule_rows_shifted(rows, anchor_day: str, hours_shift: int):
     """
-    Schedule FIRE rows for a given anchor day.
-    Applies hour shift and moves items across days when times cross midnight.
+    Schedule rows for a given anchor day, shifting by hours_shift (can be negative) with day rollover.
+    This is used for BOTH regular programming (UTC->local shift only) and FIRE blocks (UTC->local + FIRE_SHIFT_HOURS).
     """
     for tm, script_name in rows:
         delta, shifted_tm = _shift_with_dayroll(tm, hours_shift)
@@ -267,38 +287,44 @@ SCHEDULES = {
 }
 
 def schedule_tasks():
-    # 1) Regular (non-fire) weekly schedules — unchanged
-    for day in ("monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"):
-        schedule_rows(SCHEDULES[day], day)
+    # Determine UTC->local shift (e.g., -4 during EDT, -5 during EST). If not using local tz or data are local, shift is 0.
+    utc_to_local = _utc_to_local_hours() if (USE_LOCAL_TZ and DATA_TIMES_ARE_UTC) else 0
+    logging.info(f"UTC->LOCAL hour shift in effect: {utc_to_local}h (LOCAL_TZ={LOCAL_TZ}, USE_LOCAL_TZ={USE_LOCAL_TZ})")
 
-    # 2) Fire-show blocks — shift ONLY these using FIRE_SHIFT_HOURS
+    # 1) Regular (non-fire) weekly schedules — preserve exact behavior
+    for day in ("monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"):
+        schedule_rows_shifted(SCHEDULES[day], day, utc_to_local)
+
+    # 2) Fire-show blocks — apply BOTH UTC->local and FIRE_SHIFT_HOURS (fire-only adjustment)
+    fire_total_shift = utc_to_local + FIRE_SHIFT_HOURS
+
     # Mon evening -> Tue early
-    schedule_fire_rows(FIRE_BLOCKS["monday"],        "monday",   FIRE_SHIFT_HOURS)
-    schedule_fire_rows(FIRE_BLOCKS["tuesday_early"], "tuesday",  FIRE_SHIFT_HOURS)
+    schedule_rows_shifted(FIRE_BLOCKS["monday"],        "monday",   fire_total_shift)
+    schedule_rows_shifted(FIRE_BLOCKS["tuesday_early"], "tuesday",  fire_total_shift)
 
     # Tue evening -> Wed early
-    schedule_fire_rows(FIRE_BLOCKS["tuesday"],         "tuesday",   FIRE_SHIFT_HOURS)
-    schedule_fire_rows(FIRE_BLOCKS["wednesday_early"], "wednesday", FIRE_SHIFT_HOURS)
+    schedule_rows_shifted(FIRE_BLOCKS["tuesday"],         "tuesday",   fire_total_shift)
+    schedule_rows_shifted(FIRE_BLOCKS["wednesday_early"], "wednesday", fire_total_shift)
 
     # Wed evening -> Thu early
-    schedule_fire_rows(FIRE_BLOCKS["wednesday"],     "wednesday", FIRE_SHIFT_HOURS)
-    schedule_fire_rows(FIRE_BLOCKS["thursday_early"],"thursday",  FIRE_SHIFT_HOURS)
+    schedule_rows_shifted(FIRE_BLOCKS["wednesday"],     "wednesday", fire_total_shift)
+    schedule_rows_shifted(FIRE_BLOCKS["thursday_early"],"thursday",  fire_total_shift)
 
     # Thu evening -> Fri early
-    schedule_fire_rows(FIRE_BLOCKS["thursday"],      "thursday", FIRE_SHIFT_HOURS)
-    schedule_fire_rows(FIRE_BLOCKS["friday_early"],  "friday",   FIRE_SHIFT_HOURS)
+    schedule_rows_shifted(FIRE_BLOCKS["thursday"],      "thursday", fire_total_shift)
+    schedule_rows_shifted(FIRE_BLOCKS["friday_early"],  "friday",   fire_total_shift)
 
     # Fri evening -> Sat early
-    schedule_fire_rows(FIRE_BLOCKS["friday"],          "friday",   FIRE_SHIFT_HOURS)
-    schedule_fire_rows(FIRE_BLOCKS["saturday_early"],  "saturday", FIRE_SHIFT_HOURS)
+    schedule_rows_shifted(FIRE_BLOCKS["friday"],          "friday",   fire_total_shift)
+    schedule_rows_shifted(FIRE_BLOCKS["saturday_early"],  "saturday", fire_total_shift)
 
     # Sat evening -> Sun early
-    schedule_fire_rows(FIRE_BLOCKS["saturday"],      "saturday", FIRE_SHIFT_HOURS)
-    schedule_fire_rows(FIRE_BLOCKS["sunday_early"],  "sunday",   FIRE_SHIFT_HOURS)
+    schedule_rows_shifted(FIRE_BLOCKS["saturday"],      "saturday", fire_total_shift)
+    schedule_rows_shifted(FIRE_BLOCKS["sunday_early"],  "sunday",   fire_total_shift)
 
     # Sun evening -> Mon early
-    schedule_fire_rows(FIRE_BLOCKS["sunday"],        "sunday",   FIRE_SHIFT_HOURS)
-    schedule_fire_rows(FIRE_BLOCKS["monday_early"],  "monday",   FIRE_SHIFT_HOURS)
+    schedule_rows_shifted(FIRE_BLOCKS["sunday"],        "sunday",   fire_total_shift)
+    schedule_rows_shifted(FIRE_BLOCKS["monday_early"],  "monday",   fire_total_shift)
 
 def _graceful_exit(sig, _frame):
     logging.info(f"Received signal {sig}. Exiting scheduler loop.")
@@ -311,6 +337,7 @@ signal.signal(signal.SIGTERM, _graceful_exit)
 schedule_tasks()
 
 logging.info(f"Scheduler started. FIRE_SHIFT_HOURS={FIRE_SHIFT_HOURS} (fire program only)")
+logging.info(f"Process local time now: {datetime.now()} | UTC now: {datetime.utcnow()}")
 
 # Run loop
 while True:
