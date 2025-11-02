@@ -3,11 +3,20 @@ import time
 import subprocess
 import logging
 import os
+import signal
+from pathlib import Path
+from datetime import datetime, timedelta
 
-# Ensure the logs directory exists
-os.makedirs("logs", exist_ok=True)
+# -----------------------------------------------------------------------------
+# CONFIG: set to -1 to start & end FIRE blocks 1 hour earlier (e.g., DST change)
+#         set to 0 to use original times.
+# -----------------------------------------------------------------------------
+FIRE_SHIFT_HOURS = 0         # <- change to -1 to start at 5:45pm instead of 6:45pm
 
-# Set up logging
+# -------------------------
+# Logging & setup
+# -------------------------
+Path("logs").mkdir(parents=True, exist_ok=True)
 logging.basicConfig(
     filename="logs/scheduler.log",
     level=logging.INFO,
@@ -15,454 +24,265 @@ logging.basicConfig(
 )
 
 def run_script(script):
-    """Run the specified Python script."""
+    """Run the specified Python script under scripts/."""
     try:
-        print(f"Running script: {script}")
-        logging.info(f"Running script: {script}")
+        msg = f"Running script: {script}"
+        print(msg); logging.info(msg)
         subprocess.run(["python", f"scripts/{script}"], check=True)
-        print(f"Script {script} ran successfully.")
-        logging.info(f"Script {script} ran successfully.")
+        ok = f"Script {script} ran successfully."
+        print(ok); logging.info(ok)
     except subprocess.CalledProcessError as e:
-        print(f"Error running script {script}: {e}")
-        logging.error(f"Error running script {script}: {e}")
+        err = f"Error running script {script}: {e}"
+        print(err); logging.error(err)
     except Exception as e:
-        print(f"Unexpected error running script {script}: {e}")
-        logging.error(f"Unexpected error running script {script}: {e}")
+        err = f"Unexpected error running script {script}: {e}"
+        print(err); logging.error(err)
+
+def schedule_rows(rows, day_attr):
+    """Register a list of (HH:MM, script) rows for a given day attribute on schedule."""
+    day_obj = getattr(schedule.every(), day_attr)
+    for tm, script_name in rows:
+        day_obj.at(tm).do(run_script, script=script_name)
+
+# -------------------------
+# Helpers for FIRE block shifting
+# -------------------------
+def _shift_time_str(hhmm: str, hours: int) -> str:
+    """Shift 'HH:MM' by N hours (can be negative), wrap 24h, return 'HH:MM'."""
+    if hours == 0:
+        return hhmm
+    # Use a dummy date to handle wrap-around cleanly
+    base = datetime(2000, 1, 1, int(hhmm[0:2]), int(hhmm[3:5]))
+    shifted = base + timedelta(hours=hours)
+    return shifted.strftime("%H:%M")
+
+def shift_rows(rows, hours):
+    """Apply hour shift to a list of (HH:MM, script) pairs."""
+    if not hours:
+        return rows
+    return [(_shift_time_str(t, hours), s) for t, s in rows]
+
+# --------------------------------------
+# FIRE SHOW blocks (evening through early morning)
+# These are the exact blocks you highlighted and their siblings for other days.
+# **Do not edit the original times here**; use FIRE_SHIFT_HOURS above.
+# --------------------------------------
+FIRE_BLOCKS = {
+    # Mon evening -> Tue early
+    "monday": [
+        ("22:50", "75fireparking.py"), ("23:00", "75fireparking.py"), ("23:50", "75adfire.py"),
+    ],
+    "tuesday_early": [
+        ("00:00", "75fireparking.py"), ("00:50", "75adfire.py"),
+        ("01:00", "75fireparking.py"), ("01:50", "75adfire.py"),
+        ("02:00", "75fireparking.py"), ("02:50", "75adfire.py"),
+        ("03:00", "75fireparking.py"),
+    ],
+
+    # Tue evening -> Wed early
+    "tuesday": [
+        ("22:50", "75fireparking.py"), ("23:00", "75fireparking.py"), ("23:50", "75adfire.py"),
+    ],
+    "wednesday_early": [
+        ("00:00", "75fireparking.py"), ("00:50", "75adfire.py"),
+        ("01:00", "75fireparking.py"), ("01:50", "75adfire.py"),
+        ("02:00", "75fireparking.py"), ("02:50", "75adfire.py"),
+        ("03:00", "75fireparking.py"),
+    ],
+
+    # Wed evening -> Thu early
+    "wednesday": [
+        ("22:50", "75parkingfire.py"), ("23:00", "75parkingfire.py"), ("23:50", "75adfire.py"),
+    ],
+    "thursday_early": [
+        ("00:00", "75parkingfire.py"), ("00:50", "75adfire.py"),
+        ("01:00", "75parkingfire.py"), ("01:50", "75adfire.py"),
+        ("02:00", "75parkingfire.py"), ("02:50", "75adfire.py"),
+        ("03:00", "75parkingfire.py"),
+    ],
+
+    # Thu evening -> Fri early
+    "thursday": [
+        ("22:50", "85fireparking.py"), ("23:00", "85fireparking.py"), ("23:50", "85adfire.py"),
+    ],
+    "friday_early": [
+        ("00:00", "85fireparking.py"), ("00:50", "85adfire.py"),
+        ("01:00", "85fireparking.py"), ("01:50", "75adfire.py"),
+        ("02:00", "75fireparking.py"), ("02:50", "75adfire.py"),
+        ("03:00", "75fireparking.py"),
+    ],
+
+    # Fri evening -> Sat early
+    "friday": [
+        ("22:50", "85fireparking.py"), ("23:00", "85fireparking.py"), ("23:50", "85adfire.py"),
+    ],
+    "Saturday_early": [
+        ("00:00", "85fireparking.py"), ("00:50", "85adfire.py"),
+        ("01:00", "85fireparking.py"), ("01:50", "80adfire.py"),
+        ("02:00", "85fireparking.py"), ("02:50", "80adfire.py"),
+        ("03:00", "85fireparking.py"),
+    ],
+
+    # Sat evening -> Sun early
+    "saturday": [
+        ("22:50", "85fireparking.py"), ("23:00", "85fireparking.py"), ("23:50", "85adfire.py"),
+    ],
+    "sunday_early": [
+        ("00:00", "85fireparking.py"), ("00:50", "85adfire.py"),
+        ("01:00", "85fireparking.py"), ("01:50", "85adfire.py"),
+        ("02:00", "85fireparking.py"), ("02:50", "80adfire.py"),
+        ("03:00", "75fireparking.py"),
+    ],
+
+    # Sun evening -> Mon early
+    "sunday": [
+        ("22:50", "85fireparking.py"), ("23:20", "85fireparking.py"), ("23:50", "80adfire.py"),
+    ],
+    "monday_early": [
+        ("00:00", "85fireparking.py"), ("00:50", "80adfire.py"),
+        ("01:00", "75fireparking.py"), ("01:50", "75adfire.py"),
+        ("02:00", "75fireparking.py"), ("02:50", "75adfire.py"),
+        ("03:00", "75fireparking.py"),
+    ],
+}
+
+# --------------------------------------
+# NON-FIRE weekly schedules (unchanged behavior)
+# --------------------------------------
+SCHEDULES = {
+    "monday": [
+        ("15:00", "65fm.py"), ("15:15", "65sm.py"), ("15:30", "65fm.py"), ("15:45", "65sm.py"),
+        ("16:00", "75TIGS.py"), ("16:15", "65sm.py"), ("16:30", "70fm.py"), ("16:45", "70sm.py"),
+        ("17:00", "70parking.py"), ("17:15", "75TIGS.py"), ("17:30", "70fm.py"), ("17:45", "70sm.py"),
+        ("18:00", "75fm.py"), ("18:15", "75sm.py"), ("18:30", "75fm.py"), ("18:45", "75TIGS.py"),
+        ("19:00", "75parking.py"), ("19:15", "75sm.py"), ("19:30", "75fm.py"), ("19:45", "75sm.py"),
+        ("20:00", "parking.py"), ("20:15", "75sm.py"), ("20:30", "75fm.py"), ("20:45", "75sm.py"),
+        ("21:00", "75parking.py"), ("21:15", "75TIGS.py"), ("21:30", "75fm.py"), ("21:45", "75sm.py"),
+        ("22:00", "75parking.py"), ("22:15", "75TIGS.py"),
+    ],
+    "tuesday": [
+        ("04:00", "65parking.py"), ("04:15", "65sm.py"), ("04:30", "65sm.py"), ("04:45", "65sm.py"),
+        ("05:00", "65parking.py"), ("05:15", "65sm.py"), ("05:30", "65sm.py"), ("05:45", "65sm.py"),
+        ("06:00", "pause.py"),
+        ("15:00", "65fm.py"), ("15:15", "65sm.py"), ("15:30", "65fm.py"), ("15:45", "65sm.py"),
+        ("16:00", "65fm.py"), ("16:15", "65sm.py"), ("16:30", "65fm.py"), ("16:45", "65sm.py"),
+        ("17:00", "65parking.py"), ("17:15", "75TIGS.py"), ("17:30", "65fm.py"), ("17:45", "65sm.py"),
+        ("18:00", "65oarking.py"), ("18:15", "65sm.py"), ("18:30", "70fm.py"), ("18:45", "70sm.py"),
+        ("19:00", "70oarking.py"), ("19:15", "70sm.py"), ("19:30", "75TIGS.py"), ("19:45", "70sm.py"),
+        ("20:00", "75parking.py"), ("20:15", "75sm.py"), ("20:30", "75TIGS.py"), ("20:45", "75sm.py"),
+        ("21:00", "75parking.py"), ("21:15", "75sm.py"), ("21:30", "75TIGS.py"), ("21:45", "75sm.py"),
+        ("22:00", "75parking.py"), ("22:15", "75TIGS.py"),
+    ],
+    "wednesday": [
+        ("04:00", "65parking.py"), ("04:15", "65sm.py"), ("04:30", "65sm.py"), ("04:45", "65sm.py"),
+        ("05:00", "65parking.py"), ("05:15", "65sm.py"), ("05:30", "65sm.py"), ("05:45", "65sm.py"),
+        ("06:00", "pause.py"),
+        ("15:00", "65fm.py"), ("15:15", "65sm.py"), ("15:30", "75TIGS.py"), ("15:45", "65sm.py"),
+        ("16:00", "65fm.py"), ("16:15", "65sm.py"), ("16:30", "75TIGS.py"), ("16:45", "65sm.py"),
+        ("17:00", "65parking.py"), ("17:15", "65sm.py"), ("17:30", "65fm.py"), ("17:45", "65sm.py"),
+        ("18:00", "75TIGS.py"), ("18:15", "65sm.py"), ("18:30", "65fm.py"), ("18:45", "70sm.py"),
+        ("19:00", "70parking.py"), ("19:15", "70sm.py"), ("19:30", "75TIGS.py"), ("19:45", "70sm.py"),
+        ("20:00", "70parking.py"), ("20:15", "70sm.py"), ("20:30", "75TIGS.py"), ("20:45", "75sm.py"),
+        ("21:00", "80parking.py"), ("21:15", "80sm.py"), ("21:30", "80fm.py"), ("21:45", "80sm.py"),
+        ("22:00", "80parking.py"), ("22:15", "80sm.py"),
+    ],
+    "thursday": [
+        ("04:00", "65parking.py"), ("04:15", "65sm.py"), ("04:30", "65sm.py"), ("04:45", "65sm.py"),
+        ("05:00", "65parking.py"), ("05:15", "65sm.py"), ("05:30", "65sm.py"), ("05:45", "65sm.py"),
+        ("06:00", "pause.py"),
+        ("15:00", "75TIGS.py"), ("15:15", "75sm.py"), ("15:30", "75fm.py"), ("15:45", "75sm.py"),
+        ("16:00", "75parking.py"), ("16:15", "75TIGS.py"), ("16:30", "75fm.py"), ("16:45", "75sm.py"),
+        ("17:00", "75TIGS.py"), ("17:15", "75sm.py"), ("17:30", "75fm.py"), ("17:45", "75sm.py"),
+        ("18:00", "75parking.py"), ("18:15", "75sm.py"), ("18:30", "75TIGS.py"), ("18:45", "75sm.py"),
+        ("19:00", "80parking.py"), ("19:15", "80sm.py"), ("19:30", "80fm.py"), ("19:45", "80sm.py"),
+        ("20:00", "80parking.py"), ("20:15", "80sm.py"), ("20:30", "80fm.py"), ("20:45", "80sm.py"),
+        ("21:00", "80parking.py"), ("21:15", "80ad.py"), ("21:30", "80fm.py"), ("21:45", "80sm.py"),
+        ("22:00", "80parking.py"), ("22:15", "80sm.py"),
+    ],
+    "friday": [
+        ("04:00", "65parking.py"), ("04:15", "65sm.py"), ("04:30", "65sm.py"), ("04:45", "65sm.py"),
+        ("05:00", "65parking.py"), ("05:15", "65sm.py"), ("05:30", "65sm.py"), ("05:45", "65sm.py"),
+        ("06:00", "50parking.py"), ("06:15", "50sm.py"), ("06:30", "50sm.py"), ("06:45", "50sm.py"),
+        ("07:00", "50parking.py"), ("07:15", "50sm.py"), ("07:30", "50sm.py"), ("07:45", "50sm.py"),
+        ("08:00", "pause.py"),
+        ("15:00", "75fm.py"), ("15:15", "75sm.py"), ("15:30", "75TIGS.py"), ("15:45", "75sm.py"),
+        ("16:00", "75fm.py"), ("16:15", "75sm.py"), ("16:30", "75fm.py"), ("16:45", "75TIGS.py"),
+        ("17:00", "75parking.py"), ("17:15", "75sm.py"), ("17:30", "75fm.py"), ("17:45", "75sm.py"),
+        ("18:00", "75parking.py"), ("18:15", "75TIGS.py"), ("18:30", "75fm.py"), ("18:45", "75sm.py"),
+        ("19:00", "80parking.py"), ("19:15", "80sm.py"), ("19:30", "80fm.py"), ("19:45", "80sm.py"),
+        ("20:00", "90parking.py"), ("20:15", "90ad.py"), ("20:30", "90fm.py"), ("20:45", "90sm.py"),
+        ("21:00", "90parking.py"), ("21:15", "90ad.py"), ("21:30", "90fm.py"), ("21:45", "90fm.py"),
+        ("22:00", "90parking.py"), ("22:15", "90sm.py"),
+    ],
+    "saturday": [
+        ("04:00", "70parking.py"), ("04:00", "70.py"),
+        ("04:15", "70sm.py"), ("04:30", "65sm.py"), ("04:45", "65sm.py"),
+        ("05:00", "65parking.py"), ("05:15", "65sm.py"), ("05:30", "65sm.py"), ("05:45", "65sm.py"),
+        ("06:00", "65sm.py"), ("06:15", "65sm.py"), ("06:30", "65sm.py"), ("06:45", "65sm.py"),
+        ("07:00", "65parking.py"), ("07:15", "65sm.py"), ("07:30", "65sm.py"), ("07:45", "65sm.py"),
+        ("08:00", "pause.py"),
+        ("15:00", "75fm.py"), ("15:15", "75sm.py"), ("15:30", "75parking.py"), ("15:45", "75sm.py"),
+        ("16:00", "75parking.py"), ("16:15", "75sm.py"), ("16:30", "75fm.py"), ("16:45", "75sm.py"),
+        ("17:00", "75parking.py"), ("17:15", "75sm.py"), ("17:30", "75fm.py"), ("17:45", "75sm.py"),
+        ("18:00", "75parking.py"), ("18:15", "75sm.py"), ("18:30", "75ad.py"), ("18:45", "75sm.py"),
+        ("19:00", "75parking.py"), ("19:15", "75sm.py"), ("19:30", "75ad.py"), ("19:45", "75sm.py"),
+        ("20:00", "75parking.py"), ("20:15", "75sm.py"), ("20:30", "75ad.py"), ("20:45", "75sm.py"),
+        ("21:00", "85parking.py"), ("21:15", "85sm.py"), ("21:30", "85ad.py"), ("21:45", "85sm.py"),
+        ("22:00", "85parking.py"), ("22:15", "85sm.py"),
+    ],
+    "sunday": [
+        ("04:00", "65parking.py"), ("04:15", "65sm.py"), ("04:30", "65sm.py"), ("04:45", "65sm.py"),
+        ("05:00", "65parking.py"), ("05:15", "65sm.py"), ("05:30", "65sm.py"), ("05:45", "65sm.py"),
+        ("06:00", "pause.py"),
+        ("15:00", "70fm.py"), ("15:15", "70sm.py"), ("15:30", "70parking.py"), ("15:45", "70sm.py"),
+        ("16:00", "70fm.py"), ("16:15", "70sm.py"), ("16:30", "70fm.py"), ("16:45", "70sm.py"),
+        ("17:00", "70parking.py"), ("17:15", "75sm.py"), ("17:30", "75fm.py"), ("17:45", "75sm.py"),
+        ("18:00", "75parking.py"), ("18:15", "80sm.py"), ("18:30", "80fm.py"), ("18:45", "80sm.py"),
+        ("19:00", "85parking.py"), ("19:15", "85ad.py"), ("19:30", "85fm.py"), ("19:45", "85fm.py"),
+        ("20:00", "85parking.py"), ("20:15", "85sm.py"), ("20:30", "85sm.py"), ("20:45", "85ad.py"),
+        ("21:00", "85parking.py"), ("21:15", "85sm.py"), ("21:30", "85sm.py"), ("21:45", "85sm.py"),
+        ("22:00", "85parking.py"),
+    ],
+}
 
 def schedule_tasks():
-    """Schedule tasks for the week."""
-    # Monday schedule in UTC (EDT = UTC - 4 hours)
-    # Start of Monday
-    schedule.every().monday.at("15:00").do(run_script, script="65fm.py")  # 11:00 AM EDT
-    schedule.every().monday.at("15:15").do(run_script, script="65sm.py")  # 11:15 AM EDT
-    schedule.every().monday.at("15:30").do(run_script, script="65fm.py")  # 11:30 AM EDT
-    schedule.every().monday.at("15:45").do(run_script, script="65sm.py")  # 11:45 AM EDT
-    schedule.every().monday.at("16:00").do(run_script, script="65fm.py")  # 12:00 PM EDT
-    schedule.every().monday.at("16:15").do(run_script, script="65sm.py")  # 12:15 PM EDT
-    schedule.every().monday.at("16:30").do(run_script, script="70fm.py")  # 12:30 PM EDT
-    schedule.every().monday.at("16:45").do(run_script, script="70sm.py")  # 12:45 PM EDT
-    schedule.every().monday.at("17:00").do(run_script, script="70parking.py")  # 1:00 PM EDT
-    schedule.every().monday.at("17:15").do(run_script, script="70sm.py")  # 1:15 PM EDT
-    schedule.every().monday.at("17:30").do(run_script, script="70fm.py")  # 1:30 PM EDT
-    schedule.every().monday.at("17:45").do(run_script, script="70sm.py")  # 1:45 PM EDT
-    schedule.every().monday.at("18:00").do(run_script, script="75fm.py")  # 2:00 PM EDT
-    schedule.every().monday.at("18:15").do(run_script, script="75sm.py")  # 2:15 PM EDT
-    schedule.every().monday.at("18:30").do(run_script, script="75fm.py")  # 2:30 PM EDT
-    schedule.every().monday.at("18:45").do(run_script, script="75sm.py")  # 2:45 PM EDT
-    schedule.every().monday.at("19:00").do(run_script, script="75parking.py")  # 3:00 PM EDT
-    schedule.every().monday.at("19:15").do(run_script, script="75sm.py")  # 3:15 PM EDT
-    schedule.every().monday.at("19:30").do(run_script, script="75fm.py")  # 3:30 PM EDT
-    schedule.every().monday.at("19:45").do(run_script, script="75sm.py")  # 3:45 PM EDT
-    schedule.every().monday.at("20:00").do(run_script, script="parking.py")  # 4:00 PM EDT
-    schedule.every().monday.at("20:15").do(run_script, script="75sm.py")  # 4:15 PM EDT
-    schedule.every().monday.at("20:30").do(run_script, script="75fm.py")  # 4:30 PM EDT
-    schedule.every().monday.at("20:45").do(run_script, script="75sm.py")  # 4:45 PM EDT
-    schedule.every().monday.at("21:00").do(run_script, script="75parking.py")  # 5:00 PM EDT
-    schedule.every().monday.at("21:15").do(run_script, script="75sm.py")  # 5:15 PM EDT
-    schedule.every().monday.at("21:30").do(run_script, script="75fm.py")  # 5:30 PM EDT
-    schedule.every().monday.at("21:45").do(run_script, script="75sm.py")  # 5:45 PM EDT
-    schedule.every().monday.at("22:00").do(run_script, script="75parking.py")  # 6:00 PM EDT
-    schedule.every().monday.at("22:15").do(run_script, script="75sm.py")  # 6:15 PM EDT
+    # Regular (non-fire) weekly schedules
+    for day in ("monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"):
+        schedule_rows(SCHEDULES[day], day)
 
-    # 7:00 PM to 11:00 PM EDT (23:00 to 03:00 UTC)
-    schedule.every().monday.at("22:50").do(run_script, script="75fireparking.py") #PARKING
-    schedule.every().monday.at("23:00").do(run_script, script="75fireparking.py") #PARKING
-    schedule.every().monday.at("23:50").do(run_script, script="75adfire.py") #750
-    schedule.every().tuesday.at("00:00").do(run_script, script="75fireparking.py") #PARKING
-    schedule.every().tuesday.at("00:50").do(run_script, script="75adfire.py") #850
-    schedule.every().tuesday.at("01:00").do(run_script, script="75fireparking.py") #PARKING
-    schedule.every().tuesday.at("01:50").do(run_script, script="75adfire.py") #950
-    schedule.every().tuesday.at("02:00").do(run_script, script="75fireparking.py") #PARKING
-    schedule.every().tuesday.at("02:50").do(run_script, script="75adfire.py") #1050
-    schedule.every().tuesday.at("03:00").do(run_script, script="75fireparking.py") #PARKING
-   
- 
- 
-    # 12:00 AM to 2:00 AM EDT (04:00 to 06:00 UTC, next day)
-   
-    schedule.every().tuesday.at("04:00").do(run_script, script="65parking.py")  # 12:00 AM EDT
-    schedule.every().tuesday.at("04:15").do(run_script, script="65sm.py")  # 12:15 AM EDT
-    schedule.every().tuesday.at("04:30").do(run_script, script="65sm.py")  # 12:30 AM EDT
-    schedule.every().tuesday.at("04:45").do(run_script, script="65sm.py")  # 12:45 AM EDT
-    schedule.every().tuesday.at("05:00").do(run_script, script="65parking.py")  # 1:00 AM EDT
-    schedule.every().tuesday.at("05:15").do(run_script, script="65sm.py")  # 1:15 AM EDT
-    schedule.every().tuesday.at("05:30").do(run_script, script="65sm.py")  # 1:30 AM EDT
-    schedule.every().tuesday.at("05:45").do(run_script, script="65sm.py")  # 1:45 AM EDT
-    schedule.every().tuesday.at("06:00").do(run_script, script="pause.py")  # 2:00 AM EDT
+    # Fire-show blocks with optional hour shift
+    schedule_rows(shift_rows(FIRE_BLOCKS["monday"], FIRE_SHIFT_HOURS), "monday")
+    schedule_rows(shift_rows(FIRE_BLOCKS["tuesday_early"], FIRE_SHIFT_HOURS), "tuesday")
 
-    # Tuesday schedule in UTC (EDT = UTC - 4 hours)
-    # Start of Tuesday
-    schedule.every().tuesday.at("15:00").do(run_script, script="65fm.py")  # 11:00 AM EDT
-    schedule.every().tuesday.at("15:15").do(run_script, script="65sm.py")  # 11:15 AM EDT
-    schedule.every().tuesday.at("15:30").do(run_script, script="65fm.py")  # 11:30 AM EDT
-    schedule.every().tuesday.at("15:45").do(run_script, script="65sm.py")  # 11:45 AM EDT
-    schedule.every().tuesday.at("16:00").do(run_script, script="65fm.py")  # 12:00 PM EDT
-    schedule.every().tuesday.at("16:15").do(run_script, script="65sm.py")  # 12:15 PM EDT
-    schedule.every().tuesday.at("16:30").do(run_script, script="65fm.py")  # 12:30 PM EDT
-    schedule.every().tuesday.at("16:45").do(run_script, script="65sm.py")  # 12:45 PM EDT
-    schedule.every().tuesday.at("17:00").do(run_script, script="65parking.py")  # 1:00 PM EDT
-    schedule.every().tuesday.at("17:15").do(run_script, script="65sm.py")  # 1:15 PM EDT
-    schedule.every().tuesday.at("17:30").do(run_script, script="65fm.py")  # 1:30 PM EDT
-    schedule.every().tuesday.at("17:45").do(run_script, script="65sm.py")  # 1:45 PM EDT
-    schedule.every().tuesday.at("18:00").do(run_script, script="65oarking.py")  # 2:00 PM EDT
-    schedule.every().tuesday.at("18:15").do(run_script, script="65sm.py")  # 2:15 PM EDT
-    schedule.every().tuesday.at("18:30").do(run_script, script="70fm.py")  # 2:30 PM EDT
-    schedule.every().tuesday.at("18:45").do(run_script, script="70sm.py")  # 2:45 PM EDT
-    schedule.every().tuesday.at("19:00").do(run_script, script="70oarking.py")  # 3:00 PM EDT
-    schedule.every().tuesday.at("19:15").do(run_script, script="70sm.py")  # 3:15 PM EDT
-    schedule.every().tuesday.at("19:30").do(run_script, script="70fm.py")  # 3:30 PM EDT
-    schedule.every().tuesday.at("19:45").do(run_script, script="70sm.py")  # 3:45 PM EDT
-    schedule.every().tuesday.at("20:00").do(run_script, script="75parking.py")  # 4:00 PM EDT
-    schedule.every().tuesday.at("20:15").do(run_script, script="75sm.py")  # 4:15 PM EDT
-    schedule.every().tuesday.at("20:30").do(run_script, script="75fm.py")  # 4:30 PM EDT
-    schedule.every().tuesday.at("20:45").do(run_script, script="75sm.py")  # 4:45 PM EDT
-    schedule.every().tuesday.at("21:00").do(run_script, script="75parking.py")  # 5:00 PM EDT
-    schedule.every().tuesday.at("21:15").do(run_script, script="75sm.py")  # 5:15 PM EDT
-    schedule.every().tuesday.at("21:30").do(run_script, script="75fm.py")  # 5:30 PM EDT
-    schedule.every().tuesday.at("21:45").do(run_script, script="75sm.py")  # 5:45 PM EDT
-    schedule.every().tuesday.at("22:00").do(run_script, script="75parking.py")  # 6:00 PM EDT
-    schedule.every().tuesday.at("22:15").do(run_script, script="75sm.py")  # 6:15 PM EDT
+    schedule_rows(shift_rows(FIRE_BLOCKS["tuesday"], FIRE_SHIFT_HOURS), "tuesday")
+    schedule_rows(shift_rows(FIRE_BLOCKS["wednesday_early"], FIRE_SHIFT_HOURS), "wednesday")
 
-    # 7:00 PM to 11:00 PM EDT (23:00 to 03:00 UTC)
-    schedule.every().tuesday.at("22:50").do(run_script, script="75fireparking.py") #PARKING
-    schedule.every().tuesday.at("23:00").do(run_script, script="75fireparking.py") #PARKING
-    schedule.every().tuesday.at("23:50").do(run_script, script="75adfire.py") #750
-    schedule.every().wednesday.at("00:00").do(run_script, script="75fireparking.py") #PARKING
-    schedule.every().wednesday.at("00:50").do(run_script, script="75adfire.py") #850
-    schedule.every().wednesday.at("01:00").do(run_script, script="75fireparking.py") #PARKING
-    schedule.every().wednesday.at("01:50").do(run_script, script="75adfire.py") #950
-    schedule.every().wednesday.at("02:00").do(run_script, script="75fireparking.py") #PARKING
-    schedule.every().wednesday.at("02:50").do(run_script, script="75adfire.py")  #1050
-    schedule.every().wednesday.at("03:00").do(run_script, script="75fireparking.py")  #PARKING
-    
+    schedule_rows(shift_rows(FIRE_BLOCKS["wednesday"], FIRE_SHIFT_HOURS), "wednesday")
+    schedule_rows(shift_rows(FIRE_BLOCKS["thursday_early"], FIRE_SHIFT_HOURS), "thursday")
 
-    # 12:00 AM to 2:00 AM EDT (04:00 to 06:00 UTC, next day)
+    schedule_rows(shift_rows(FIRE_BLOCKS["thursday"], FIRE_SHIFT_HOURS), "thursday")
+    schedule_rows(shift_rows(FIRE_BLOCKS["friday_early"], FIRE_SHIFT_HOURS), "friday")
 
-    schedule.every().wednesday.at("04:00").do(run_script, script="65parking.py")  # 12:00 AM EDT
-    schedule.every().wednesday.at("04:15").do(run_script, script="65sm.py")  # 12:15 AM EDT
-    schedule.every().wednesday.at("04:30").do(run_script, script="65sm.py")  # 12:30 AM EDT
-    schedule.every().wednesday.at("04:45").do(run_script, script="65sm.py")  # 12:45 AM EDT
-    schedule.every().wednesday.at("05:00").do(run_script, script="65parking.py")  # 1:00 AM EDT
-    schedule.every().wednesday.at("05:15").do(run_script, script="65sm.py")  # 1:15 AM EDT
-    schedule.every().wednesday.at("05:30").do(run_script, script="65sm.py")  # 1:30 AM EDT
-    schedule.every().wednesday.at("05:45").do(run_script, script="65sm.py")  # 1:45 AM EDT
-    schedule.every().wednesday.at("06:00").do(run_script, script="pause.py")  # 2:00 AM EDT
+    schedule_rows(shift_rows(FIRE_BLOCKS["friday"], FIRE_SHIFT_HOURS), "friday")
+    schedule_rows(shift_rows(FIRE_BLOCKS["Saturday_early"], FIRE_SHIFT_HOURS), "saturday")
 
-    # Wednesday schedule in UTC (EDT = UTC - 4 hours)
-    # Start of Wednesday
-    schedule.every().wednesday.at("15:00").do(run_script, script="65fm.py")  # 11:00 AM EDT
-    schedule.every().wednesday.at("15:15").do(run_script, script="65sm.py")  # 11:15 AM EDT
-    schedule.every().wednesday.at("15:30").do(run_script, script="65fm.py")  # 11:30 AM EDT
-    schedule.every().wednesday.at("15:45").do(run_script, script="65sm.py")  # 11:45 AM EDT
-    schedule.every().wednesday.at("16:00").do(run_script, script="65fm.py")  # 12:00 PM EDT
-    schedule.every().wednesday.at("16:15").do(run_script, script="65sm.py")  # 12:15 PM EDT
-    schedule.every().wednesday.at("16:30").do(run_script, script="65fm.py")  # 12:30 PM EDT
-    schedule.every().wednesday.at("16:45").do(run_script, script="65sm.py")  # 12:45 PM EDT
-    schedule.every().wednesday.at("17:00").do(run_script, script="65parking.py")  # 1:00 PM EDT
-    schedule.every().wednesday.at("17:15").do(run_script, script="65sm.py")  # 1:15 PM EDT
-    schedule.every().wednesday.at("17:30").do(run_script, script="65fm.py")  # 1:30 PM EDT
-    schedule.every().wednesday.at("17:45").do(run_script, script="65sm.py")  # 1:45 PM EDT
-    schedule.every().wednesday.at("18:00").do(run_script, script="65fm.py")  # 2:00 PM EDT
-    schedule.every().wednesday.at("18:15").do(run_script, script="65sm.py")  # 2:15 PM EDT
-    schedule.every().wednesday.at("18:30").do(run_script, script="65fm.py")  # 2:30 PM EDT
-    schedule.every().wednesday.at("18:45").do(run_script, script="70sm.py")  # 2:45 PM EDT
-    schedule.every().wednesday.at("19:00").do(run_script, script="70parking.py")  # 3:00 PM EDT
-    schedule.every().wednesday.at("19:15").do(run_script, script="70sm.py")  # 3:15 PM EDT
-    schedule.every().wednesday.at("19:30").do(run_script, script="70fm.py")  # 3:30 PM EDT
-    schedule.every().wednesday.at("19:45").do(run_script, script="70sm.py")  # 3:45 PM EDT
-    schedule.every().wednesday.at("20:00").do(run_script, script="70parking.py")  # 4:00 PM EDT
-    schedule.every().wednesday.at("20:15").do(run_script, script="70sm.py")  # 4:15 PM EDT
-    schedule.every().wednesday.at("20:30").do(run_script, script="70fm.py")  # 4:30 PM EDT
-    schedule.every().wednesday.at("20:45").do(run_script, script="75sm.py")  # 4:45 PM EDT
-    schedule.every().wednesday.at("21:00").do(run_script, script="80parking.py")  # 5:00 PM EDT
-    schedule.every().wednesday.at("21:15").do(run_script, script="80sm.py")  # 5:15 PM EDT
-    schedule.every().wednesday.at("21:30").do(run_script, script="80fm.py")  # 5:30 PM EDT
-    schedule.every().wednesday.at("21:45").do(run_script, script="80sm.py")  # 5:45 PM EDT
-    schedule.every().wednesday.at("22:00").do(run_script, script="80parking.py")  # 6:00 PM EDT
-    schedule.every().wednesday.at("22:15").do(run_script, script="80sm.py")  # 6:15 PM EDT
+    schedule_rows(shift_rows(FIRE_BLOCKS["saturday"], FIRE_SHIFT_HOURS), "saturday")
+    schedule_rows(shift_rows(FIRE_BLOCKS["sunday_early"], FIRE_SHIFT_HOURS), "sunday")
 
-    # 7:00 PM to 11:00 PM EDT (23:00 to 03:00 UTC)
-    schedule.every().wednesday.at("22:50").do(run_script, script="75parkingfire.py") #PARKING
-    schedule.every().wednesday.at("23:00").do(run_script, script="75parkingfire.py") #PARKING
-    schedule.every().wednesday.at("23:50").do(run_script, script="75adfire.py") #750
-    schedule.every().thursday.at("00:00").do(run_script, script="75parkingfire.py") #PARKING
-    schedule.every().thursday.at("00:50").do(run_script, script="75adfire.py") #850
-    schedule.every().thursday.at("01:00").do(run_script, script="75parkingfire.py") #PARKING
-    schedule.every().thursday.at("01:50").do(run_script, script="75adfire.py") #950
-    schedule.every().thursday.at("02:00").do(run_script, script="75parkingfire.py") #PARKING
-    schedule.every().thursday.at("02:50").do(run_script, script="75adfire.py")  #1050
-    schedule.every().thursday.at("03:00").do(run_script, script="75parkingfire.py")  #PARKING
-   
+    schedule_rows(shift_rows(FIRE_BLOCKS["sunday"], FIRE_SHIFT_HOURS), "sunday")
+    schedule_rows(shift_rows(FIRE_BLOCKS["monday_early"], FIRE_SHIFT_HOURS), "monday")
 
+def _graceful_exit(sig, _frame):
+    logging.info(f"Received signal {sig}. Exiting scheduler loop.")
+    raise SystemExit(0)
 
-    # 12:00 AM to 2:00 AM EDT (04:00 to 06:00 UTC, next day)
-   
-    schedule.every().thursday.at("04:00").do(run_script, script="65parking.py")  # 12:00 AM EDT
-    schedule.every().thursday.at("04:15").do(run_script, script="65sm.py")  # 12:15 AM EDT
-    schedule.every().thursday.at("04:30").do(run_script, script="65sm.py")  # 12:30 AM EDT
-    schedule.every().thursday.at("04:45").do(run_script, script="65sm.py")  # 12:45 AM EDT
-    schedule.every().thursday.at("05:00").do(run_script, script="65parking.py")  # 1:00 AM EDT
-    schedule.every().thursday.at("05:15").do(run_script, script="65sm.py")  # 1:15 AM EDT
-    schedule.every().thursday.at("05:30").do(run_script, script="65sm.py")  # 1:30 AM EDT
-    schedule.every().thursday.at("05:45").do(run_script, script="65sm.py")  # 1:45 AM EDT
-    schedule.every().thursday.at("06:00").do(run_script, script="pause.py")  # 2:00 AM EDT
+signal.signal(signal.SIGINT, _graceful_exit)
+signal.signal(signal.SIGTERM, _graceful_exit)
 
-    # Thursday schedule in UTC (EDT = UTC - 4 hours)
-    # Start of Thursday
-    schedule.every().thursday.at("15:00").do(run_script, script="75fm.py")  # 11:00 AM EDT
-    schedule.every().thursday.at("15:15").do(run_script, script="75sm.py")  # 11:15 AM EDT
-    schedule.every().thursday.at("15:30").do(run_script, script="75fm.py")  # 11:30 AM EDT
-    schedule.every().thursday.at("15:45").do(run_script, script="75sm.py")  # 11:45 AM EDT
-    schedule.every().thursday.at("16:00").do(run_script, script="75parking.py")  # 12:00 PM EDT
-    schedule.every().thursday.at("16:15").do(run_script, script="75sm.py")  # 12:15 PM EDT
-    schedule.every().thursday.at("16:30").do(run_script, script="75fm.py")  # 12:30 PM EDT
-    schedule.every().thursday.at("16:45").do(run_script, script="75sm.py")  # 12:45 PM EDT
-    schedule.every().thursday.at("17:00").do(run_script, script="75fm.py")  # 1:00 PM EDT
-    schedule.every().thursday.at("17:15").do(run_script, script="75sm.py")  # 1:15 PM EDT
-    schedule.every().thursday.at("17:30").do(run_script, script="75fm.py")  # 1:30 PM EDT
-    schedule.every().thursday.at("17:45").do(run_script, script="75sm.py")  # 1:45 PM EDT
-    schedule.every().thursday.at("18:00").do(run_script, script="75parking.py")  # 2:00 PM EDT
-    schedule.every().thursday.at("18:15").do(run_script, script="75sm.py")  # 2:15 PM EDT
-    schedule.every().thursday.at("18:30").do(run_script, script="75fm.py")  # 2:30 PM EDT
-    schedule.every().thursday.at("18:45").do(run_script, script="75sm.py")  # 2:45 PM EDT
-    schedule.every().thursday.at("19:00").do(run_script, script="80parking.py")  # 3:00 PM EDT
-    schedule.every().thursday.at("19:15").do(run_script, script="80sm.py")  # 3:15 PM EDT
-    schedule.every().thursday.at("19:30").do(run_script, script="80fm.py")  # 3:30 PM EDT
-    schedule.every().thursday.at("19:45").do(run_script, script="80sm.py")  # 3:45 PM EDT
-    schedule.every().thursday.at("20:00").do(run_script, script="80parking.py")  # 4:00 PM EDT
-    schedule.every().thursday.at("20:15").do(run_script, script="80sm.py")  # 4:15 PM EDT
-    schedule.every().thursday.at("20:30").do(run_script, script="80fm.py")  # 4:30 PM EDT
-    schedule.every().thursday.at("20:45").do(run_script, script="80sm.py")  # 4:45 PM EDT
-    schedule.every().thursday.at("21:00").do(run_script, script="80parking.py")  # 5:00 PM EDT
-    schedule.every().thursday.at("21:15").do(run_script, script="80ad.py")  # 5:15 PM EDT
-    schedule.every().thursday.at("21:30").do(run_script, script="80fm.py")  # 5:30 PM EDT
-    schedule.every().thursday.at("21:45").do(run_script, script="80sm.py")  # 5:45 PM EDT
-    schedule.every().thursday.at("22:00").do(run_script, script="80parking.py")  # 6:00 PM EDT
-    schedule.every().thursday.at("22:15").do(run_script, script="80sm.py")  # 6:15 PM EDT
-
-    # 7:00 PM to 11:00 PM EDT (23:00 to 03:00 UTC)
-    schedule.every().thursday.at("22:50").do(run_script, script="85fireparking.py") #PARKING
-    schedule.every().thursday.at("23:00").do(run_script, script="85fireparking.py") #PARKING
-    schedule.every().thursday.at("23:50").do(run_script, script="85adfire.py") #750
-    schedule.every().friday.at("00:00").do(run_script, script="85fireparking.py") #PARKING
-    schedule.every().friday.at("00:50").do(run_script, script="85adfire.py") #850
-    schedule.every().friday.at("01:00").do(run_script, script="85fireparking.py") #PARKING
-    schedule.every().friday.at("01:50").do(run_script, script="75adfire.py") #950
-    schedule.every().friday.at("02:00").do(run_script, script="75fireparking.py") #PARKING
-    schedule.every().friday.at("02:50").do(run_script, script="75adfire.py")  #1050
-    schedule.every().friday.at("03:00").do(run_script, script="75fireparking.py")  #PARKING
-
-
-    # 12:00 AM to 2:00 AM EDT (04:00 to 06:00 UTC, next day)
-    schedule.every().friday.at("04:00").do(run_script, script="65parking.py")  # 12:00 AM EDT
-    schedule.every().friday.at("04:15").do(run_script, script="65sm.py")  # 12:15 AM EDT
-    schedule.every().friday.at("04:30").do(run_script, script="65sm.py")  # 12:30 AM EDT
-    schedule.every().friday.at("04:45").do(run_script, script="65sm.py")  # 12:45 AM EDT
-    schedule.every().friday.at("05:00").do(run_script, script="65parking.py")  # 1:00 AM EDT
-    schedule.every().friday.at("05:15").do(run_script, script="65sm.py")  # 1:15 AM EDT
-    schedule.every().friday.at("05:30").do(run_script, script="65sm.py")  # 1:30 AM EDT
-    schedule.every().friday.at("05:45").do(run_script, script="65sm.py")  # 1:45 AM EDT
-    # 2:00 AM to 4:00 AM EDT (06:00 to 08:00 UTC, next day, Friday only)
-    schedule.every().friday.at("06:00").do(run_script, script="50parking.py")  # 2:00 AM EDT
-    schedule.every().friday.at("06:15").do(run_script, script="50sm.py")  # 2:15 AM EDT
-    schedule.every().friday.at("06:30").do(run_script, script="50sm.py")  # 2:30 AM EDT
-    schedule.every().friday.at("06:45").do(run_script, script="50sm.py")  # 2:45 AM EDT
-    schedule.every().friday.at("07:00").do(run_script, script="50parking.py")  # 3:00 AM EDT
-    schedule.every().friday.at("07:15").do(run_script, script="50sm.py")  # 3:15 AM EDT
-    schedule.every().friday.at("07:30").do(run_script, script="50sm.py")  # 3:30 AM EDT
-    schedule.every().friday.at("07:45").do(run_script, script="50sm.py")  # 3:45 AM EDT
-    schedule.every().friday.at("08:00").do(run_script, script="pause.py")  # 4:00 AM EDT
-
-    # Friday schedule in UTC (EDT = UTC - 4 hours)
-    # Start of Friday
-    schedule.every().friday.at("15:00").do(run_script, script="75fm.py")  # 11:00 AM EDT
-    schedule.every().friday.at("15:15").do(run_script, script="75sm.py")  # 11:15 AM EDT
-    schedule.every().friday.at("15:30").do(run_script, script="75fm.py")  # 11:30 AM EDT
-    schedule.every().friday.at("15:45").do(run_script, script="75sm.py")  # 11:45 AM EDT
-    schedule.every().friday.at("16:00").do(run_script, script="75fm.py")  # 12:00 PM EDT
-    schedule.every().friday.at("16:15").do(run_script, script="75sm.py")  # 12:15 PM EDT
-    schedule.every().friday.at("16:30").do(run_script, script="75fm.py")  # 12:30 PM EDT
-    schedule.every().friday.at("16:45").do(run_script, script="75sm.py")  # 12:45 PM EDT
-    schedule.every().friday.at("17:00").do(run_script, script="75parking.py")  # 1:00 PM EDT
-    schedule.every().friday.at("17:15").do(run_script, script="75sm.py")  # 1:15 PM EDT
-    schedule.every().friday.at("17:30").do(run_script, script="75fm.py")  # 1:30 PM EDT
-    schedule.every().friday.at("17:45").do(run_script, script="75sm.py")  # 1:45 PM EDT
-    schedule.every().friday.at("18:00").do(run_script, script="75parking.py")  # 2:00 PM EDT
-    schedule.every().friday.at("18:15").do(run_script, script="75sm.py")  # 2:15 PM EDT
-    schedule.every().friday.at("18:30").do(run_script, script="75fm.py")  # 2:30 PM EDT
-    schedule.every().friday.at("18:45").do(run_script, script="75sm.py")  # 2:45 PM EDT
-    schedule.every().friday.at("19:00").do(run_script, script="80parking.py")  # 3:00 PM EDT
-    schedule.every().friday.at("19:15").do(run_script, script="80sm.py")  # 3:15 PM EDT
-    schedule.every().friday.at("19:30").do(run_script, script="80fm.py")  # 3:30 PM EDT
-    schedule.every().friday.at("19:45").do(run_script, script="80sm.py")  # 3:45 PM EDT
-    schedule.every().friday.at("20:00").do(run_script, script="90parking.py")  # 4:00 PM EDT
-    schedule.every().friday.at("20:15").do(run_script, script="90ad.py")  # 4:15 PM EDT
-    schedule.every().friday.at("20:30").do(run_script, script="90fm.py")  # 4:30 PM EDT
-    schedule.every().friday.at("20:45").do(run_script, script="90sm.py")  # 4:45 PM EDT
-    schedule.every().friday.at("21:00").do(run_script, script="90parking.py")  # 5:00 PM EDT
-    schedule.every().friday.at("21:15").do(run_script, script="90ad.py")  # 5:15 PM EDT
-    schedule.every().friday.at("21:30").do(run_script, script="90fm.py")  # 5:30 PM EDT
-    schedule.every().friday.at("21:45").do(run_script, script="90fm.py")  # 5:45 PM EDT
-    schedule.every().friday.at("22:00").do(run_script, script="90parking.py")  # 6:00 PM EDT
-    schedule.every().friday.at("22:15").do(run_script, script="90sm.py")  # 6:15 PM EDT
-    # 7:00 PM to 11:00 PM EDT (23:00 to 03:00 UTC)
-
-    schedule.every().friday.at("22:50").do(run_script, script="85fireparking.py") #PARKING
-    schedule.every().friday.at("23:00").do(run_script, script="85fireparking.py") #PARKING
-    schedule.every().friday.at("23:50").do(run_script, script="85adfire.py") #750
-    schedule.every().saturday.at("00:00").do(run_script, script="85fireparking.py") #PARKING
-    schedule.every().saturday.at("00:50").do(run_script, script="85adfire.py") #850
-    schedule.every().saturday.at("01:00").do(run_script, script="85fireparking.py") #PARKING
-    schedule.every().saturday.at("01:50").do(run_script, script="80adfire.py") #950
-    schedule.every().saturday.at("02:00").do(run_script, script="85fireparking.py") #PARKING
-    schedule.every().saturday.at("02:50").do(run_script, script="80adfire.py")  #1050
-    schedule.every().saturday.at("03:00").do(run_script, script="85fireparking.py")  #PARKING
-
-
-    # 12:00 AM to 4:00 AM EDT (04:00 to 08:00 UTC, next day)
-
-    schedule.every().saturday.at("04:00").do(run_script, script="70parking.py")  # 12:00 AM EDT
-    schedule.every().saturday.at("04:00").do(run_script, script="70.py")  # 12:00 AM EDT
-    schedule.every().saturday.at("04:15").do(run_script, script="70sm.py")  # 12:15 AM EDT
-    schedule.every().saturday.at("04:30").do(run_script, script="65sm.py")  # 12:30 AM EDT
-    schedule.every().saturday.at("04:45").do(run_script, script="65sm.py")  # 12:45 AM EDT
-    schedule.every().saturday.at("05:00").do(run_script, script="65parking.py")  # 1:00 AM EDT
-    schedule.every().saturday.at("05:15").do(run_script, script="65sm.py")  # 1:15 AM EDT
-    schedule.every().saturday.at("05:30").do(run_script, script="65sm.py")  # 1:30 AM EDT
-    schedule.every().saturday.at("05:45").do(run_script, script="65sm.py")  # 1:45 AM EDT
-    schedule.every().saturday.at("06:00").do(run_script, script="65sm.py")  # 2:00 AM EDT
-    schedule.every().saturday.at("06:15").do(run_script, script="65sm.py")  # 2:15 AM EDT
-    schedule.every().saturday.at("06:30").do(run_script, script="65sm.py")  # 2:30 AM EDT
-    schedule.every().saturday.at("06:45").do(run_script, script="65sm.py")  # 2:45 AM EDT
-    schedule.every().saturday.at("07:00").do(run_script, script="65parking.py")  # 3:00 AM EDT
-    schedule.every().saturday.at("07:15").do(run_script, script="65sm.py")  # 3:15 AM EDT
-    schedule.every().saturday.at("07:30").do(run_script, script="65sm.py")  # 3:30 AM EDT
-    schedule.every().saturday.at("07:45").do(run_script, script="65sm.py")  # 3:45 AM EDT
-    schedule.every().saturday.at("08:00").do(run_script, script="pause.py")  # 4:00 AM EDT
-
-    # Saturday schedule in UTC (EDT = UTC - 4 hours)
-    # Start of Saturday
-    schedule.every().saturday.at("15:00").do(run_script, script="75fm.py")  # 11:00 AM EDT
-    schedule.every().saturday.at("15:15").do(run_script, script="75sm.py")  # 11:15 AM EDT
-    schedule.every().saturday.at("15:30").do(run_script, script="75parking.py")  # 11:30 AM EDT
-    schedule.every().saturday.at("15:45").do(run_script, script="75sm.py")  # 11:45 AM EDT
-    schedule.every().saturday.at("16:00").do(run_script, script="75parking.py")  # 12:00 PM EDT
-    schedule.every().saturday.at("16:15").do(run_script, script="75sm.py")  # 12:15 PM EDT
-    schedule.every().saturday.at("16:30").do(run_script, script="75fm.py")  # 12:30 PM EDT
-    schedule.every().saturday.at("16:45").do(run_script, script="75sm.py")  # 12:45 PM EDT
-    schedule.every().saturday.at("17:00").do(run_script, script="75parking.py")  # 1:00 PM EDT
-    schedule.every().saturday.at("17:15").do(run_script, script="75sm.py")  # 1:15 PM EDT
-    schedule.every().saturday.at("17:30").do(run_script, script="75fm.py")  # 1:30 PM EDT
-    schedule.every().saturday.at("17:45").do(run_script, script="75sm.py")  # 1:45 PM EDT
-    schedule.every().saturday.at("18:00").do(run_script, script="75parking.py")  # 2:00 PM EDT
-    schedule.every().saturday.at("18:15").do(run_script, script="75sm.py")  # 2:15 PM EDT
-    schedule.every().saturday.at("18:30").do(run_script, script="75ad.py")  # 2:30 PM EDT
-    schedule.every().saturday.at("18:45").do(run_script, script="75sm.py")  # 2:45 PM EDT
-    schedule.every().saturday.at("19:00").do(run_script, script="75parking.py")  # 3:00 PM EDT
-    schedule.every().saturday.at("19:15").do(run_script, script="75sm.py")  # 3:15 PM EDT
-    schedule.every().saturday.at("19:30").do(run_script, script="75ad.py")  # 3:30 PM EDT
-    schedule.every().saturday.at("19:45").do(run_script, script="75sm.py")  # 3:45 PM EDT
-    schedule.every().saturday.at("20:00").do(run_script, script="75parking.py")  # 4:00 PM EDT
-    schedule.every().saturday.at("20:15").do(run_script, script="75sm.py")  # 4:15 PM EDT
-    schedule.every().saturday.at("20:30").do(run_script, script="75ad.py")  # 4:30 PM EDT
-    schedule.every().saturday.at("20:45").do(run_script, script="75sm.py")  # 4:45 PM EDT
-    schedule.every().saturday.at("21:00").do(run_script, script="85parking.py")  # 5:00 PM EDT
-    schedule.every().saturday.at("21:15").do(run_script, script="85sm.py")  # 5:15 PM EDT
-    schedule.every().saturday.at("21:30").do(run_script, script="85ad.py")  # 5:30 PM EDT
-    schedule.every().saturday.at("21:45").do(run_script, script="85sm.py")  # 5:45 PM EDT
-    schedule.every().saturday.at("22:00").do(run_script, script="85parking.py")  # 6:00 PM EDT
-    schedule.every().saturday.at("22:15").do(run_script, script="85sm.py")  # 6:15 PM EDT
-    # 7:00 PM to 11:00 PM EDT (23:00 to 03:00 UTC)
-    
-    schedule.every().saturday.at("22:50").do(run_script, script="85fireparking.py") #fire parking
-    schedule.every().saturday.at("23:00").do(run_script, script="85fireparking.py") #PARKING
-    schedule.every().saturday.at("23:50").do(run_script, script="85adfire.py") #750
-    schedule.every().sunday.at("00:00").do(run_script, script="85fireparking.py") #PARKING
-    schedule.every().sunday.at("00:50").do(run_script, script="85adfire.py") #850
-    schedule.every().sunday.at("01:00").do(run_script, script="85fireparking.py") #PARKING
-    schedule.every().sunday.at("01:50").do(run_script, script="85adfire.py") #950
-    schedule.every().sunday.at("02:00").do(run_script, script="85fireparking.py") #PARKING
-    schedule.every().sunday.at("02:50").do(run_script, script="80adfire.py")  #1050
-    schedule.every().sunday.at("03:00").do(run_script, script="75fireparking.py")  #PARKING
-
-    
-
-
-
-    # 12:00 AM to 4:00 AM EDT (04:00 to 08:00 UTC, next day)
-    
-    schedule.every().sunday.at("04:00").do(run_script, script="65parking.py")  # 12:00 AM EDT
-    schedule.every().sunday.at("04:15").do(run_script, script="65sm.py")  # 12:15 AM EDT
-    schedule.every().sunday.at("04:30").do(run_script, script="65sm.py")  # 12:30 AM EDT
-    schedule.every().sunday.at("04:45").do(run_script, script="65sm.py")  # 12:45 AM EDT
-    schedule.every().sunday.at("05:00").do(run_script, script="65parking.py")  # 1:00 AM EDT
-    schedule.every().sunday.at("05:15").do(run_script, script="65sm.py")  # 1:15 AM EDT
-    schedule.every().sunday.at("05:30").do(run_script, script="65sm.py")  # 1:30 AM EDT
-    schedule.every().sunday.at("05:45").do(run_script, script="65sm.py")  # 1:45 AM EDT
-    schedule.every().sunday.at("06:00").do(run_script, script="pause.py")  # 2:00 AM EDT
-
-    # Sunday schedule in UTC (EDT = UTC - 4 hours)
-    # Start of Sunday
-    schedule.every().sunday.at("15:00").do(run_script, script="70fm.py")  # 11:00 AM EDT
-    schedule.every().sunday.at("15:15").do(run_script, script="70sm.py")  # 11:15 AM EDT
-    schedule.every().sunday.at("15:30").do(run_script, script="70parking.py")  # 11:30 AM EDT
-    schedule.every().sunday.at("15:45").do(run_script, script="70sm.py")  # 11:45 AM EDT
-    schedule.every().sunday.at("16:00").do(run_script, script="70fm.py")  # 12:00 PM EDT
-    schedule.every().sunday.at("16:15").do(run_script, script="70sm.py")  # 12:15 PM EDT
-    schedule.every().sunday.at("16:30").do(run_script, script="70fm.py")  # 12:30 PM EDT
-    schedule.every().sunday.at("16:45").do(run_script, script="70sm.py")  # 12:45 PM EDT
-    schedule.every().sunday.at("17:00").do(run_script, script="70parking.py")  # 1:00 PM EDT
-    schedule.every().sunday.at("17:15").do(run_script, script="75sm.py")  # 1:15 PM EDT
-    schedule.every().sunday.at("17:30").do(run_script, script="75fm.py")  # 1:30 PM EDT
-    schedule.every().sunday.at("17:45").do(run_script, script="75sm.py")  # 1:45 PM EDT
-    schedule.every().sunday.at("18:00").do(run_script, script="75parking.py")  # 2:00 PM EDT
-    schedule.every().sunday.at("18:15").do(run_script, script="80sm.py")  # 2:15 PM EDT
-    schedule.every().sunday.at("18:30").do(run_script, script="80fm.py")  # 2:30 PM EDT
-    schedule.every().sunday.at("18:45").do(run_script, script="80sm.py")  # 2:45 PM EDT
-    schedule.every().sunday.at("19:00").do(run_script, script="85parking.py")  # 3:00 PM EDT
-    schedule.every().sunday.at("19:15").do(run_script, script="85ad.py")  # 3:15 PM EDT
-    schedule.every().sunday.at("19:30").do(run_script, script="85fm.py")  # 3:30 PM EDT
-    schedule.every().sunday.at("19:45").do(run_script, script="85fm.py")  # 3:45 PM EDT
-    schedule.every().sunday.at("20:00").do(run_script, script="85parking.py")  # 4:00 PM EDT
-    schedule.every().sunday.at("20:15").do(run_script, script="85sm.py")  # 4:15 PM EDT
-    schedule.every().sunday.at("20:30").do(run_script, script="85sm.py")  # 4:30 PM EDT
-    schedule.every().sunday.at("20:45").do(run_script, script="85ad.py")  # 4:45 PM EDT
-    schedule.every().sunday.at("21:00").do(run_script, script="85parking.py")  # 5:00 PM EDT
-    schedule.every().sunday.at("21:15").do(run_script, script="85sm.py")  # 5:15 PM EDT
-    schedule.every().sunday.at("21:30").do(run_script, script="85sm.py")  # 5:30 PM EDT
-    schedule.every().sunday.at("21:45").do(run_script, script="85sm.py")  # 5:45 PM EDT
-    schedule.every().sunday.at("22:00").do(run_script, script="85parking.py")  # 6:00 PM EDT
-  
-
-     # 7:00 PM to 11:00 PM EDT (23:00 to 03:00 UTC)
-    schedule.every().sunday.at("22:50").do(run_script, script="85fireparking.py") #Fire Parking
-    schedule.every().sunday.at("23:20").do(run_script, script="85fireparking.py") #PARKING
-    schedule.every().sunday.at("23:50").do(run_script, script="80adfire.py") #750
-    schedule.every().monday.at("00:00").do(run_script, script="85fireparking.py") #PARKING
-    schedule.every().monday.at("00:50").do(run_script, script="80adfire.py") #850
-    schedule.every().monday.at("01:00").do(run_script, script="75fireparking.py") #PARKING
-    schedule.every().monday.at("01:50").do(run_script, script="75adfire.py") #950
-    schedule.every().monday.at("02:00").do(run_script, script="75fireparking.py") #PARKING
-    schedule.every().monday.at("02:50").do(run_script, script="75adfire.py") #1050
-    schedule.every().monday.at("03:00").do(run_script, script="75fireparking.py") #PARKING
-  
-
-    # 12:00 AM to 2:00 AM EDT (04:00 to 06:00 UTC, next day)
-  
-    schedule.every().monday.at("04:00").do(run_script, script="65parking.py")  # 12:00 AM EDT
-    schedule.every().monday.at("04:15").do(run_script, script="65sm.py")  # 12:15 AM EDT
-    schedule.every().monday.at("04:30").do(run_script, script="65sm.py")  # 12:30 AM EDT
-    schedule.every().monday.at("04:45").do(run_script, script="65sm.py")  # 12:45 AM EDT
-    schedule.every().monday.at("05:00").do(run_script, script="65parking.py")  # 1:00 AM EDT
-    schedule.every().monday.at("05:15").do(run_script, script="65sm.py")  # 1:15 AM EDT
-    schedule.every().monday.at("05:30").do(run_script, script="65sm.py")  # 1:30 AM EDT
-    schedule.every().monday.at("05:45").do(run_script, script="65sm.py")  # 1:45 AM EDT
-    schedule.every().monday.at("06:00").do(run_script, script="pause.py")  # 2:00 AM EDT
-
-# Call the scheduling function
+# Register jobs
 schedule_tasks()
 
-# Run the scheduler loop
+# Run loop
 while True:
     schedule.run_pending()
     time.sleep(1)
