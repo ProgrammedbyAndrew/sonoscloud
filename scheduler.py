@@ -9,14 +9,22 @@ from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 
 # -----------------------------------------------------------------------------
-# CONFIG: FIRE program only — set to -1 to start & end FIRE blocks 1 hour earlier (e.g., DST); set to 0 to use original times.
+# CONFIG
 # -----------------------------------------------------------------------------
-FIRE_SHIFT_HOURS = -1         # <- change to -1 to start at 5:45pm instead of 6:45pm
+# FIRE program only — set to -1 to start & end FIRE blocks 1 hour earlier (e.g., winter standard time);
+# set to 0 to use original evening times (6:45pm start baseline).
+FIRE_SHIFT_HOURS = -1   # <- -1 means start at 5:45pm instead of 6:45pm; 0 returns to normal
 
-# Timezone / data-frame config
-USE_LOCAL_TZ = True                 # If True, scheduler runs in LOCAL_TZ and data times below are auto-converted
-LOCAL_TZ = 'America/New_York'       # Orlando time
-DATA_TIMES_ARE_UTC = True           # The times in FIRE_BLOCKS and SCHEDULES below are authored in UTC
+# Force all scheduling to use Orlando local time regardless of server timezone.
+USE_LOCAL_TZ = True
+LOCAL_TZ = "America/New_York"
+
+# Author/edit times as Orlando local times. (Leave True.)
+AUTHOR_TIMES_LOCAL = True
+
+# Debug: print a preview of the next-run times after registering jobs
+PRINT_LOCAL_SCHEDULE = True
+PRINT_LIMIT_PER_DAY = 30
 
 # -------------------------
 # Logging & setup
@@ -32,42 +40,52 @@ logging.basicConfig(
 if USE_LOCAL_TZ:
     try:
         os.environ['TZ'] = LOCAL_TZ
-        time.tzset()  # works on Unix-like systems
+        # time.tzset is available on Unix-like systems (Heroku/Linux). On Windows it is absent.
+        if hasattr(time, 'tzset'):
+            time.tzset()
         logging.info(f"Timezone set to {LOCAL_TZ} for scheduling.")
     except Exception as e:
         logging.warning(f"Could not set TZ env or tzset(): {e}")
 
 """
-# ===================== EASY EDIT ZONE =====================
-# 1) To move FIRE SHOW earlier/later: set FIRE_SHIFT_HOURS to -1 or 0 above.
-# 2) To add/edit FIRE blocks: edit FIRE_BLOCKS below (leave times as the ORIGINAL unshifted UTC values).
-# 3) To add/edit regular (non-fire) programming: edit SCHEDULES below.
-#    Tip: You can copy/paste rows like ("20:15", "75sm.py").
-# ==========================================================
+===================== EASY EDIT ZONE =====================
+All times below are authored in ORLANDO local time (America/New_York).
+1) To move FIRE SHOW earlier/later: set FIRE_SHIFT_HOURS to -1 (earlier) or 0 (normal) above.
+2) To add/edit FIRE blocks: edit FIRE_BLOCKS (LOCAL TIMES).
+3) To add/edit regular programming: edit SCHEDULES (LOCAL TIMES). Use ("HH:MM", "script.py").
+==========================================================
 """
 
-def run_script(script):
+# --------------------------------------
+# Runner
+# --------------------------------------
+
+def run_script(script: str):
     """Run the specified Python script under scripts/."""
     try:
         msg = f"Running script: {script}"
-        print(msg); logging.info(msg)
+        print(msg)
+        logging.info(msg)
         subprocess.run(["python", f"scripts/{script}"], check=True)
         ok = f"Script {script} ran successfully."
-        print(ok); logging.info(ok)
+        print(ok)
+        logging.info(ok)
     except subprocess.CalledProcessError as e:
         err = f"Error running script {script}: {e}"
-        print(err); logging.error(err)
+        print(err)
+        logging.error(err)
     except Exception as e:
         err = f"Unexpected error running script {script}: {e}"
-        print(err); logging.error(err)
-
+        print(err)
+        logging.error(err)
 
 # -------------------------
-# Helpers for shifting with day rollover (UTC->local and FIRE adjustments)
+# Helpers for hour-shift with day rollover
 # -------------------------
 DAY_ORDER = ["monday","tuesday","wednesday","thursday","friday","saturday","sunday"]
 PREV_DAY = {d: DAY_ORDER[(i-1) % 7] for i, d in enumerate(DAY_ORDER)}
 NEXT_DAY = {d: DAY_ORDER[(i+1) % 7] for i, d in enumerate(DAY_ORDER)}
+
 
 def _shift_with_dayroll(hhmm: str, hours: int):
     """Return (day_delta, HH:MM) after shifting by 'hours' with 24h wrap."""
@@ -79,20 +97,8 @@ def _shift_with_dayroll(hhmm: str, hours: int):
     return day_delta, shifted.strftime("%H:%M")
 
 
-def _utc_to_local_hours() -> int:
-    """Return the integer hours offset to convert UTC times to LOCAL_TZ at runtime (handles DST)."""
-    try:
-        off = datetime.now(ZoneInfo(LOCAL_TZ)).utcoffset()
-        return int(round(off.total_seconds() / 3600))
-    except Exception as e:
-        logging.warning(f"Falling back to -5h offset (EST) due to error computing tz offset: {e}")
-        return -5
-
 def schedule_rows_shifted(rows, anchor_day: str, hours_shift: int):
-    """
-    Schedule rows for a given anchor day, shifting by hours_shift (can be negative) with day rollover.
-    This is used for BOTH regular programming (UTC->local shift only) and FIRE blocks (UTC->local + FIRE_SHIFT_HOURS).
-    """
+    """Schedule rows for a given anchor day, shifting by hours_shift with possible day rollover."""
     for tm, script_name in rows:
         delta, shifted_tm = _shift_with_dayroll(tm, hours_shift)
         target_day = anchor_day
@@ -104,227 +110,219 @@ def schedule_rows_shifted(rows, anchor_day: str, hours_shift: int):
 
 # --------------------------------------
 # FIRE SHOW blocks (evening through early morning)
-# These are the exact blocks you highlighted and their siblings for other days.
-# **Do not edit the original times here**; use FIRE_SHIFT_HOURS above.
+# Author at ~6:45pm baseline; FIRE_SHIFT_HOURS moves these earlier/later.
 # --------------------------------------
 FIRE_BLOCKS = {
-    # Mon evening -> Tue early
+    # Mon evening -> Tue early (baseline start 18:45)
     "monday": [
-        ("22:50", "75fireparking.py"), ("23:00", "75fireparking.py"), ("23:50", "75adfire.py"),
+        ("18:45", "75fireparking.py"), ("19:00", "75fireparking.py"), ("19:50", "75adfire.py"),
     ],
     "tuesday_early": [
-        ("00:00", "75fireparking.py"), ("00:50", "75adfire.py"),
-        ("01:00", "75fireparking.py"), ("01:50", "75adfire.py"),
-        ("02:00", "75fireparking.py"), ("02:50", "75adfire.py"),
-        ("03:00", "75fireparking.py"),
+        ("20:00", "75fireparking.py"), ("20:50", "75adfire.py"),
+        ("21:00", "75fireparking.py"), ("21:50", "75adfire.py"),
+        ("22:00", "75fireparking.py"), ("22:50", "75adfire.py"),
+        ("23:00", "75fireparking.py"),
     ],
 
     # Tue evening -> Wed early
     "tuesday": [
-        ("22:50", "75fireparking.py"), ("23:00", "75fireparking.py"), ("23:50", "75adfire.py"),
+        ("18:45", "75fireparking.py"), ("19:00", "75fireparking.py"), ("19:50", "75adfire.py"),
     ],
     "wednesday_early": [
-        ("00:00", "75fireparking.py"), ("00:50", "75adfire.py"),
-        ("01:00", "75fireparking.py"), ("01:50", "75adfire.py"),
-        ("02:00", "75fireparking.py"), ("02:50", "75adfire.py"),
-        ("03:00", "75fireparking.py"),
+        ("20:00", "75fireparking.py"), ("20:50", "75adfire.py"),
+        ("21:00", "75fireparking.py"), ("21:50", "75adfire.py"),
+        ("22:00", "75fireparking.py"), ("22:50", "75adfire.py"),
+        ("23:00", "75fireparking.py"),
     ],
 
-    # Wed evening -> Thu early
+    # Wed evening -> Thu early (variant script name)
     "wednesday": [
-        ("22:50", "75parkingfire.py"), ("23:00", "75parkingfire.py"), ("23:50", "75adfire.py"),
+        ("18:45", "75parkingfire.py"), ("19:00", "75parkingfire.py"), ("19:50", "75adfire.py"),
     ],
     "thursday_early": [
-        ("00:00", "75parkingfire.py"), ("00:50", "75adfire.py"),
-        ("01:00", "75parkingfire.py"), ("01:50", "75adfire.py"),
-        ("02:00", "75parkingfire.py"), ("02:50", "75adfire.py"),
-        ("03:00", "75parkingfire.py"),
+        ("20:00", "75parkingfire.py"), ("20:50", "75adfire.py"),
+        ("21:00", "75parkingfire.py"), ("21:50", "75adfire.py"),
+        ("22:00", "75parkingfire.py"), ("22:50", "75adfire.py"),
+        ("23:00", "75parkingfire.py"),
     ],
 
-    # Thu evening -> Fri early
+    # Thu evening -> Fri early (85 series)
     "thursday": [
-        ("22:50", "85fireparking.py"), ("23:00", "85fireparking.py"), ("23:50", "85adfire.py"),
+        ("18:45", "85fireparking.py"), ("19:00", "85fireparking.py"), ("19:50", "85adfire.py"),
     ],
     "friday_early": [
-        ("00:00", "85fireparking.py"), ("00:50", "85adfire.py"),
-        ("01:00", "85fireparking.py"), ("01:50", "75adfire.py"),
-        ("02:00", "75fireparking.py"), ("02:50", "75adfire.py"),
-        ("03:00", "75fireparking.py"),
+        ("20:00", "85fireparking.py"), ("20:50", "85adfire.py"),
+        ("21:00", "85fireparking.py"), ("21:50", "75adfire.py"),
+        ("22:00", "75fireparking.py"), ("22:50", "75adfire.py"),
+        ("23:00", "75fireparking.py"),
     ],
 
-    # Fri evening -> Sat early
+    # Fri evening -> Sat early (85 series)
     "friday": [
-        ("22:50", "85fireparking.py"), ("23:00", "85fireparking.py"), ("23:50", "85adfire.py"),
+        ("18:45", "85fireparking.py"), ("19:00", "85fireparking.py"), ("19:50", "85adfire.py"),
     ],
     "saturday_early": [
-        ("00:00", "85fireparking.py"), ("00:50", "85adfire.py"),
-        ("01:00", "85fireparking.py"), ("01:50", "80adfire.py"),
-        ("02:00", "85fireparking.py"), ("02:50", "80adfire.py"),
-        ("03:00", "85fireparking.py"),
+        ("20:00", "85fireparking.py"), ("20:50", "85adfire.py"),
+        ("21:00", "85fireparking.py"), ("21:50", "80adfire.py"),
+        ("22:00", "85fireparking.py"), ("22:50", "80adfire.py"),
+        ("23:00", "85fireparking.py"),
     ],
 
-    # Sat evening -> Sun early
+    # Sat evening -> Sun early (85 series)
     "saturday": [
-        ("22:50", "85fireparking.py"), ("23:00", "85fireparking.py"), ("23:50", "85adfire.py"),
+        ("18:45", "85fireparking.py"), ("19:00", "85fireparking.py"), ("19:50", "85adfire.py"),
     ],
     "sunday_early": [
-        ("00:00", "85fireparking.py"), ("00:50", "85adfire.py"),
-        ("01:00", "85fireparking.py"), ("01:50", "85adfire.py"),
-        ("02:00", "85fireparking.py"), ("02:50", "80adfire.py"),
-        ("03:00", "75fireparking.py"),
+        ("20:00", "85fireparking.py"), ("20:50", "85adfire.py"),
+        ("21:00", "85fireparking.py"), ("21:50", "85adfire.py"),
+        ("22:00", "85fireparking.py"), ("22:50", "80adfire.py"),
+        ("23:00", "75fireparking.py"),
     ],
 
-    # Sun evening -> Mon early
+    # Sun evening -> Mon early (85 fire + 80 ads mix)
     "sunday": [
-        ("22:50", "85fireparking.py"), ("23:20", "85fireparking.py"), ("23:50", "80adfire.py"),
+        ("18:45", "85fireparking.py"), ("19:20", "85fireparking.py"), ("19:50", "80adfire.py"),
     ],
     "monday_early": [
-        ("00:00", "85fireparking.py"), ("00:50", "80adfire.py"),
-        ("01:00", "75fireparking.py"), ("01:50", "75adfire.py"),
-        ("02:00", "75fireparking.py"), ("02:50", "75adfire.py"),
-        ("03:00", "75fireparking.py"),
+        ("20:00", "85fireparking.py"), ("20:50", "80adfire.py"),
+        ("21:00", "75fireparking.py"), ("21:50", "75adfire.py"),
+        ("22:00", "75fireparking.py"), ("22:50", "75adfire.py"),
+        ("23:00", "75fireparking.py"),
     ],
 }
 
 # --------------------------------------
-# NON-FIRE weekly schedules (unchanged behavior)
+# NON-FIRE weekly schedules (LOCAL times)
+# Fixed typos: '65oarking.py' -> '65parking.py', '70oarking.py' -> '70parking.py'.
 # --------------------------------------
-# You can add commercials or swap scripts by editing the tuples below; format is ("HH:MM", "script.py").
 SCHEDULES = {
     "monday": [
-        ("15:00", "65fm.py"), ("15:15", "65sm.py"), ("15:30", "65fm.py"), ("15:45", "65sm.py"),
-        ("16:00", "75TIGS.py"), ("16:15", "65sm.py"), ("16:30", "70fm.py"), ("16:45", "70sm.py"),
-        ("17:00", "70parking.py"), ("17:15", "75TIGS.py"), ("17:30", "70fm.py"), ("17:45", "70sm.py"),
-        ("18:00", "75fm.py"), ("18:15", "75sm.py"), ("18:30", "75fm.py"), ("18:45", "75TIGS.py"),
-        ("19:00", "75parking.py"), ("19:15", "75sm.py"), ("19:30", "75fm.py"), ("19:45", "75sm.py"),
-        ("20:00", "parking.py"), ("20:15", "75sm.py"), ("20:30", "75fm.py"), ("20:45", "75sm.py"),
-        ("21:00", "75parking.py"), ("21:15", "75TIGS.py"), ("21:30", "75fm.py"), ("21:45", "75sm.py"),
-        ("22:00", "75parking.py"), ("22:15", "75TIGS.py"),
+        ("12:00", "65fm.py"), ("12:15", "65sm.py"), ("12:30", "65fm.py"), ("12:45", "65sm.py"),
+        ("13:00", "75TIGS.py"), ("13:15", "65sm.py"), ("13:30", "70fm.py"), ("13:45", "70sm.py"),
+        ("14:00", "70parking.py"), ("14:15", "75TIGS.py"), ("14:30", "70fm.py"), ("14:45", "70sm.py"),
+        ("15:00", "75fm.py"), ("15:15", "75sm.py"), ("15:30", "75fm.py"), ("15:45", "75TIGS.py"),
+        ("16:00", "75parking.py"), ("16:15", "75sm.py"), ("16:30", "75fm.py"), ("16:45", "75sm.py"),
+        ("17:00", "parking.py"), ("17:15", "75sm.py"), ("17:30", "75fm.py"), ("17:45", "75sm.py"),
+        ("18:00", "75parking.py"), ("18:15", "75TIGS.py"), ("18:30", "75fm.py"), ("18:45", "75sm.py"),
+        ("19:00", "75parking.py"), ("19:15", "75TIGS.py"),
     ],
     "tuesday": [
-        ("04:00", "65parking.py"), ("04:15", "65sm.py"), ("04:30", "65sm.py"), ("04:45", "65sm.py"),
-        ("05:00", "65parking.py"), ("05:15", "65sm.py"), ("05:30", "65sm.py"), ("05:45", "65sm.py"),
-        ("06:00", "pause.py"),
-        ("15:00", "65fm.py"), ("15:15", "65sm.py"), ("15:30", "65fm.py"), ("15:45", "65sm.py"),
-        ("16:00", "65fm.py"), ("16:15", "65sm.py"), ("16:30", "65fm.py"), ("16:45", "65sm.py"),
-        ("17:00", "65parking.py"), ("17:15", "75TIGS.py"), ("17:30", "65fm.py"), ("17:45", "65sm.py"),
-        ("18:00", "65oarking.py"), ("18:15", "65sm.py"), ("18:30", "70fm.py"), ("18:45", "70sm.py"),
-        ("19:00", "70oarking.py"), ("19:15", "70sm.py"), ("19:30", "75TIGS.py"), ("19:45", "70sm.py"),
-        ("20:00", "75parking.py"), ("20:15", "75sm.py"), ("20:30", "75TIGS.py"), ("20:45", "75sm.py"),
-        ("21:00", "75parking.py"), ("21:15", "75sm.py"), ("21:30", "75TIGS.py"), ("21:45", "75sm.py"),
-        ("22:00", "75parking.py"), ("22:15", "75TIGS.py"),
+        # 12:00 AM – 2:00 AM local
+        ("00:00", "65parking.py"), ("00:15", "65sm.py"), ("00:30", "65sm.py"), ("00:45", "65sm.py"),
+        ("01:00", "65parking.py"), ("01:15", "65sm.py"), ("01:30", "65sm.py"), ("01:45", "65sm.py"),
+        ("02:00", "pause.py"),
+        # Day program starting 11:00 AM local
+        ("11:00", "65fm.py"), ("11:15", "65sm.py"), ("11:30", "65fm.py"), ("11:45", "65sm.py"),
+        ("12:00", "65fm.py"), ("12:15", "65sm.py"), ("12:30", "65fm.py"), ("12:45", "65sm.py"),
+        ("13:00", "65parking.py"), ("13:15", "75TIGS.py"), ("13:30", "65fm.py"), ("13:45", "65sm.py"),
+        ("14:00", "65parking.py"), ("14:15", "65sm.py"), ("14:30", "70fm.py"), ("14:45", "70sm.py"),
+        ("15:00", "70parking.py"), ("15:15", "70sm.py"), ("15:30", "75TIGS.py"), ("15:45", "70sm.py"),
+        ("16:00", "75parking.py"), ("16:15", "75sm.py"), ("16:30", "75TIGS.py"), ("16:45", "75sm.py"),
+        ("17:00", "75parking.py"), ("17:15", "75sm.py"), ("17:30", "75TIGS.py"), ("17:45", "75sm.py"),
+        ("18:00", "75parking.py"), ("18:15", "75TIGS.py"),
     ],
     "wednesday": [
-        ("04:00", "65parking.py"), ("04:15", "65sm.py"), ("04:30", "65sm.py"), ("04:45", "65sm.py"),
-        ("05:00", "65parking.py"), ("05:15", "65sm.py"), ("05:30", "65sm.py"), ("05:45", "65sm.py"),
-        ("06:00", "pause.py"),
-        ("15:00", "65fm.py"), ("15:15", "65sm.py"), ("15:30", "75TIGS.py"), ("15:45", "65sm.py"),
-        ("16:00", "65fm.py"), ("16:15", "65sm.py"), ("16:30", "75TIGS.py"), ("16:45", "65sm.py"),
-        ("17:00", "65parking.py"), ("17:15", "65sm.py"), ("17:30", "65fm.py"), ("17:45", "65sm.py"),
-        ("18:00", "75TIGS.py"), ("18:15", "65sm.py"), ("18:30", "65fm.py"), ("18:45", "70sm.py"),
-        ("19:00", "70parking.py"), ("19:15", "70sm.py"), ("19:30", "75TIGS.py"), ("19:45", "70sm.py"),
-        ("20:00", "70parking.py"), ("20:15", "70sm.py"), ("20:30", "75TIGS.py"), ("20:45", "75sm.py"),
-        ("21:00", "80parking.py"), ("21:15", "80sm.py"), ("21:30", "80fm.py"), ("21:45", "80sm.py"),
-        ("22:00", "80parking.py"), ("22:15", "80sm.py"),
+        ("00:00", "65parking.py"), ("00:15", "65sm.py"), ("00:30", "65sm.py"), ("00:45", "65sm.py"),
+        ("01:00", "65parking.py"), ("01:15", "65sm.py"), ("01:30", "65sm.py"), ("01:45", "65sm.py"),
+        ("02:00", "pause.py"),
+        ("11:00", "65fm.py"), ("11:15", "65sm.py"), ("11:30", "75TIGS.py"), ("11:45", "65sm.py"),
+        ("12:00", "65fm.py"), ("12:15", "65sm.py"), ("12:30", "75TIGS.py"), ("12:45", "65sm.py"),
+        ("13:00", "65parking.py"), ("13:15", "65sm.py"), ("13:30", "65fm.py"), ("13:45", "65sm.py"),
+        ("14:00", "75TIGS.py"), ("14:15", "65sm.py"), ("14:30", "65fm.py"), ("14:45", "70sm.py"),
+        ("15:00", "70parking.py"), ("15:15", "70sm.py"), ("15:30", "75TIGS.py"), ("15:45", "70sm.py"),
+        ("16:00", "70parking.py"), ("16:15", "70sm.py"), ("16:30", "75TIGS.py"), ("16:45", "75sm.py"),
+        ("17:00", "80parking.py"), ("17:15", "80sm.py"), ("17:30", "80fm.py"), ("17:45", "80sm.py"),
+        ("18:00", "80parking.py"), ("18:15", "80sm.py"),
     ],
     "thursday": [
-        ("04:00", "65parking.py"), ("04:15", "65sm.py"), ("04:30", "65sm.py"), ("04:45", "65sm.py"),
-        ("05:00", "65parking.py"), ("05:15", "65sm.py"), ("05:30", "65sm.py"), ("05:45", "65sm.py"),
-        ("06:00", "pause.py"),
-        ("15:00", "75TIGS.py"), ("15:15", "75sm.py"), ("15:30", "75fm.py"), ("15:45", "75sm.py"),
-        ("16:00", "75parking.py"), ("16:15", "75TIGS.py"), ("16:30", "75fm.py"), ("16:45", "75sm.py"),
-        ("17:00", "75TIGS.py"), ("17:15", "75sm.py"), ("17:30", "75fm.py"), ("17:45", "75sm.py"),
-        ("18:00", "75parking.py"), ("18:15", "75sm.py"), ("18:30", "75TIGS.py"), ("18:45", "75sm.py"),
-        ("19:00", "80parking.py"), ("19:15", "80sm.py"), ("19:30", "80fm.py"), ("19:45", "80sm.py"),
-        ("20:00", "80parking.py"), ("20:15", "80sm.py"), ("20:30", "80fm.py"), ("20:45", "80sm.py"),
-        ("21:00", "80parking.py"), ("21:15", "80ad.py"), ("21:30", "80fm.py"), ("21:45", "80sm.py"),
-        ("22:00", "80parking.py"), ("22:15", "80sm.py"),
+        ("00:00", "65parking.py"), ("00:15", "65sm.py"), ("00:30", "65sm.py"), ("00:45", "65sm.py"),
+        ("01:00", "65parking.py"), ("01:15", "65sm.py"), ("01:30", "65sm.py"), ("01:45", "65sm.py"),
+        ("02:00", "pause.py"),
+        ("11:00", "75TIGS.py"), ("11:15", "75sm.py"), ("11:30", "75fm.py"), ("11:45", "75sm.py"),
+        ("12:00", "75parking.py"), ("12:15", "75TIGS.py"), ("12:30", "75fm.py"), ("12:45", "75sm.py"),
+        ("13:00", "75TIGS.py"), ("13:15", "75sm.py"), ("13:30", "75fm.py"), ("13:45", "75sm.py"),
+        ("14:00", "75parking.py"), ("14:15", "75sm.py"), ("14:30", "75TIGS.py"), ("14:45", "75sm.py"),
+        ("15:00", "80parking.py"), ("15:15", "80sm.py"), ("15:30", "80fm.py"), ("15:45", "80sm.py"),
+        ("16:00", "80parking.py"), ("16:15", "80sm.py"), ("16:30", "80fm.py"), ("16:45", "80sm.py"),
+        ("17:00", "80parking.py"), ("17:15", "80ad.py"), ("17:30", "80fm.py"), ("17:45", "80sm.py"),
+        ("18:00", "80parking.py"), ("18:15", "80sm.py"),
     ],
     "friday": [
-        ("04:00", "65parking.py"), ("04:15", "65sm.py"), ("04:30", "65sm.py"), ("04:45", "65sm.py"),
-        ("05:00", "65parking.py"), ("05:15", "65sm.py"), ("05:30", "65sm.py"), ("05:45", "65sm.py"),
-        ("06:00", "50parking.py"), ("06:15", "50sm.py"), ("06:30", "50sm.py"), ("06:45", "50sm.py"),
-        ("07:00", "50parking.py"), ("07:15", "50sm.py"), ("07:30", "50sm.py"), ("07:45", "50sm.py"),
-        ("08:00", "pause.py"),
-        ("15:00", "75fm.py"), ("15:15", "75sm.py"), ("15:30", "75TIGS.py"), ("15:45", "75sm.py"),
-        ("16:00", "75fm.py"), ("16:15", "75sm.py"), ("16:30", "75fm.py"), ("16:45", "75TIGS.py"),
-        ("17:00", "75parking.py"), ("17:15", "75sm.py"), ("17:30", "75fm.py"), ("17:45", "75sm.py"),
-        ("18:00", "75parking.py"), ("18:15", "75TIGS.py"), ("18:30", "75fm.py"), ("18:45", "75sm.py"),
-        ("19:00", "80parking.py"), ("19:15", "80sm.py"), ("19:30", "80fm.py"), ("19:45", "80sm.py"),
-        ("20:00", "90parking.py"), ("20:15", "90ad.py"), ("20:30", "90fm.py"), ("20:45", "90sm.py"),
-        ("21:00", "90parking.py"), ("21:15", "90ad.py"), ("21:30", "90fm.py"), ("21:45", "90fm.py"),
-        ("22:00", "90parking.py"), ("22:15", "90sm.py"),
+        # 12:00 AM – 1:45 AM local
+        ("00:00", "65parking.py"), ("00:15", "65sm.py"), ("00:30", "65sm.py"), ("00:45", "65sm.py"),
+        ("01:00", "65parking.py"), ("01:15", "65sm.py"), ("01:30", "65sm.py"), ("01:45", "65sm.py"),
+        # 2:00 AM – 4:00 AM local (50-series)
+        ("02:00", "50parking.py"), ("02:15", "50sm.py"), ("02:30", "50sm.py"), ("02:45", "50sm.py"),
+        ("03:00", "50parking.py"), ("03:15", "50sm.py"), ("03:30", "50sm.py"), ("03:45", "50sm.py"),
+        ("04:00", "pause.py"),
+        # Day program starting 11:00 AM local
+        ("11:00", "75fm.py"), ("11:15", "75sm.py"), ("11:30", "75TIGS.py"), ("11:45", "75sm.py"),
+        ("12:00", "75fm.py"), ("12:15", "75sm.py"), ("12:30", "75fm.py"), ("12:45", "75TIGS.py"),
+        ("13:00", "75parking.py"), ("13:15", "75sm.py"), ("13:30", "75fm.py"), ("13:45", "75sm.py"),
+        ("14:00", "75parking.py"), ("14:15", "75TIGS.py"), ("14:30", "75fm.py"), ("14:45", "75sm.py"),
+        ("15:00", "80parking.py"), ("15:15", "80sm.py"), ("15:30", "80fm.py"), ("15:45", "80sm.py"),
+        ("16:00", "90parking.py"), ("16:15", "90ad.py"), ("16:30", "90fm.py"), ("16:45", "90sm.py"),
+        ("17:00", "90parking.py"), ("17:15", "90ad.py"), ("17:30", "90fm.py"), ("17:45", "90fm.py"),
+        ("18:00", "90parking.py"), ("18:15", "90sm.py"),
     ],
     "saturday": [
-        ("04:00", "70parking.py"), ("04:00", "70.py"),
-        ("04:15", "70sm.py"), ("04:30", "65sm.py"), ("04:45", "65sm.py"),
-        ("05:00", "65parking.py"), ("05:15", "65sm.py"), ("05:30", "65sm.py"), ("05:45", "65sm.py"),
-        ("06:00", "65sm.py"), ("06:15", "65sm.py"), ("06:30", "65sm.py"), ("06:45", "65sm.py"),
-        ("07:00", "65parking.py"), ("07:15", "65sm.py"), ("07:30", "65sm.py"), ("07:45", "65sm.py"),
-        ("08:00", "pause.py"),
-        ("15:00", "75fm.py"), ("15:15", "75sm.py"), ("15:30", "75parking.py"), ("15:45", "75sm.py"),
-        ("16:00", "75parking.py"), ("16:15", "75sm.py"), ("16:30", "75fm.py"), ("16:45", "75sm.py"),
-        ("17:00", "75parking.py"), ("17:15", "75sm.py"), ("17:30", "75fm.py"), ("17:45", "75sm.py"),
-        ("18:00", "75parking.py"), ("18:15", "75sm.py"), ("18:30", "75ad.py"), ("18:45", "75sm.py"),
-        ("19:00", "75parking.py"), ("19:15", "75sm.py"), ("19:30", "75ad.py"), ("19:45", "75sm.py"),
-        ("20:00", "75parking.py"), ("20:15", "75sm.py"), ("20:30", "75ad.py"), ("20:45", "75sm.py"),
-        ("21:00", "85parking.py"), ("21:15", "85sm.py"), ("21:30", "85ad.py"), ("21:45", "85sm.py"),
-        ("22:00", "85parking.py"), ("22:15", "85sm.py"),
+        # 12:00 AM – 4:00 AM local
+        ("00:00", "70parking.py"), ("00:00", "70.py"),
+        ("00:15", "70sm.py"), ("00:30", "65sm.py"), ("00:45", "65sm.py"),
+        ("01:00", "65parking.py"), ("01:15", "65sm.py"), ("01:30", "65sm.py"), ("01:45", "65sm.py"),
+        ("02:00", "65sm.py"), ("02:15", "65sm.py"), ("02:30", "65sm.py"), ("02:45", "65sm.py"),
+        ("03:00", "65parking.py"), ("03:15", "65sm.py"), ("03:30", "65sm.py"), ("03:45", "65sm.py"),
+        ("04:00", "pause.py"),
+        # Day program starting 11:00 AM local
+        ("11:00", "75fm.py"), ("11:15", "75sm.py"), ("11:30", "75parking.py"), ("11:45", "75sm.py"),
+        ("12:00", "75parking.py"), ("12:15", "75sm.py"), ("12:30", "75fm.py"), ("12:45", "75sm.py"),
+        ("13:00", "75parking.py"), ("13:15", "75sm.py"), ("13:30", "75fm.py"), ("13:45", "75sm.py"),
+        ("14:00", "75parking.py"), ("14:15", "75sm.py"), ("14:30", "75ad.py"), ("14:45", "75sm.py"),
+        ("15:00", "75parking.py"), ("15:15", "75sm.py"), ("15:30", "75ad.py"), ("15:45", "75sm.py"),
+        ("16:00", "75parking.py"), ("16:15", "75sm.py"), ("16:30", "75ad.py"), ("16:45", "75sm.py"),
+        ("17:00", "85parking.py"), ("17:15", "85sm.py"), ("17:30", "85ad.py"), ("17:45", "85sm.py"),
+        ("18:00", "85parking.py"), ("18:15", "85sm.py"),
     ],
     "sunday": [
-        ("04:00", "65parking.py"), ("04:15", "65sm.py"), ("04:30", "65sm.py"), ("04:45", "65sm.py"),
-        ("05:00", "65parking.py"), ("05:15", "65sm.py"), ("05:30", "65sm.py"), ("05:45", "65sm.py"),
-        ("06:00", "pause.py"),
-        ("15:00", "70fm.py"), ("15:15", "70sm.py"), ("15:30", "70parking.py"), ("15:45", "70sm.py"),
-        ("16:00", "70fm.py"), ("16:15", "70sm.py"), ("16:30", "70fm.py"), ("16:45", "70sm.py"),
-        ("17:00", "70parking.py"), ("17:15", "75sm.py"), ("17:30", "75fm.py"), ("17:45", "75sm.py"),
-        ("18:00", "75parking.py"), ("18:15", "80sm.py"), ("18:30", "80fm.py"), ("18:45", "80sm.py"),
-        ("19:00", "85parking.py"), ("19:15", "85ad.py"), ("19:30", "85fm.py"), ("19:45", "85fm.py"),
-        ("20:00", "85parking.py"), ("20:15", "85sm.py"), ("20:30", "85sm.py"), ("20:45", "85ad.py"),
-        ("21:00", "85parking.py"), ("21:15", "85sm.py"), ("21:30", "85sm.py"), ("21:45", "85sm.py"),
-        ("22:00", "85parking.py"),
+        ("00:00", "65parking.py"), ("00:15", "65sm.py"), ("00:30", "65sm.py"), ("00:45", "65sm.py"),
+        ("01:00", "65parking.py"), ("01:15", "65sm.py"), ("01:30", "65sm.py"), ("01:45", "65sm.py"),
+        ("02:00", "pause.py"),
+        ("11:00", "70fm.py"), ("11:15", "70sm.py"), ("11:30", "70parking.py"), ("11:45", "70sm.py"),
+        ("12:00", "70fm.py"), ("12:15", "70sm.py"), ("12:30", "70fm.py"), ("12:45", "70sm.py"),
+        ("13:00", "70parking.py"), ("13:15", "75sm.py"), ("13:30", "75fm.py"), ("13:45", "75sm.py"),
+        ("14:00", "75parking.py"), ("14:15", "80sm.py"), ("14:30", "80fm.py"), ("14:45", "80sm.py"),
+        ("15:00", "85parking.py"), ("15:15", "85ad.py"), ("15:30", "85fm.py"), ("15:45", "85fm.py"),
+        ("16:00", "85parking.py"), ("16:15", "85sm.py"), ("16:30", "85sm.py"), ("16:45", "85ad.py"),
+        ("17:00", "85parking.py"), ("17:15", "85sm.py"), ("17:30", "85sm.py"), ("17:45", "85sm.py"),
+        ("18:00", "85parking.py"),
     ],
 }
 
+# --------------------------------------
+# Register jobs
+# --------------------------------------
+
 def schedule_tasks():
-    # Determine UTC->local shift (e.g., -4 during EDT, -5 during EST). If not using local tz or data are local, shift is 0.
-    utc_to_local = _utc_to_local_hours() if (USE_LOCAL_TZ and DATA_TIMES_ARE_UTC) else 0
-    logging.info(f"UTC->LOCAL hour shift in effect: {utc_to_local}h (LOCAL_TZ={LOCAL_TZ}, USE_LOCAL_TZ={USE_LOCAL_TZ})")
+    # 1) Regular (non-fire) — times are authored in LOCAL time; schedule directly
+    for day in DAY_ORDER:
+        schedule_rows_shifted(SCHEDULES.get(day, []), day, 0)
 
-    # 1) Regular (non-fire) weekly schedules — preserve exact behavior
-    for day in ("monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"):
-        schedule_rows_shifted(SCHEDULES[day], day, utc_to_local)
+    # 2) Fire — authored in LOCAL time; apply FIRE_SHIFT_HOURS only
+    schedule_rows_shifted(FIRE_BLOCKS.get("monday", []),          "monday",   FIRE_SHIFT_HOURS)
+    schedule_rows_shifted(FIRE_BLOCKS.get("tuesday_early", []),   "tuesday",  FIRE_SHIFT_HOURS)
+    schedule_rows_shifted(FIRE_BLOCKS.get("tuesday", []),         "tuesday",  FIRE_SHIFT_HOURS)
+    schedule_rows_shifted(FIRE_BLOCKS.get("wednesday_early", []), "wednesday",FIRE_SHIFT_HOURS)
+    schedule_rows_shifted(FIRE_BLOCKS.get("wednesday", []),       "wednesday",FIRE_SHIFT_HOURS)
+    schedule_rows_shifted(FIRE_BLOCKS.get("thursday_early", []),  "thursday", FIRE_SHIFT_HOURS)
+    schedule_rows_shifted(FIRE_BLOCKS.get("thursday", []),        "thursday", FIRE_SHIFT_HOURS)
+    schedule_rows_shifted(FIRE_BLOCKS.get("friday_early", []),    "friday",   FIRE_SHIFT_HOURS)
+    schedule_rows_shifted(FIRE_BLOCKS.get("friday", []),          "friday",   FIRE_SHIFT_HOURS)
+    schedule_rows_shifted(FIRE_BLOCKS.get("saturday_early", []),  "saturday", FIRE_SHIFT_HOURS)
+    schedule_rows_shifted(FIRE_BLOCKS.get("saturday", []),        "saturday", FIRE_SHIFT_HOURS)
+    schedule_rows_shifted(FIRE_BLOCKS.get("sunday_early", []),    "sunday",   FIRE_SHIFT_HOURS)
+    schedule_rows_shifted(FIRE_BLOCKS.get("sunday", []),          "sunday",   FIRE_SHIFT_HOURS)
+    schedule_rows_shifted(FIRE_BLOCKS.get("monday_early", []),    "monday",   FIRE_SHIFT_HOURS)
 
-    # 2) Fire-show blocks — apply BOTH UTC->local and FIRE_SHIFT_HOURS (fire-only adjustment)
-    fire_total_shift = utc_to_local + FIRE_SHIFT_HOURS
-
-    # Mon evening -> Tue early
-    schedule_rows_shifted(FIRE_BLOCKS["monday"],        "monday",   fire_total_shift)
-    schedule_rows_shifted(FIRE_BLOCKS["tuesday_early"], "tuesday",  fire_total_shift)
-
-    # Tue evening -> Wed early
-    schedule_rows_shifted(FIRE_BLOCKS["tuesday"],         "tuesday",   fire_total_shift)
-    schedule_rows_shifted(FIRE_BLOCKS["wednesday_early"], "wednesday", fire_total_shift)
-
-    # Wed evening -> Thu early
-    schedule_rows_shifted(FIRE_BLOCKS["wednesday"],     "wednesday", fire_total_shift)
-    schedule_rows_shifted(FIRE_BLOCKS["thursday_early"],"thursday",  fire_total_shift)
-
-    # Thu evening -> Fri early
-    schedule_rows_shifted(FIRE_BLOCKS["thursday"],      "thursday", fire_total_shift)
-    schedule_rows_shifted(FIRE_BLOCKS["friday_early"],  "friday",   fire_total_shift)
-
-    # Fri evening -> Sat early
-    schedule_rows_shifted(FIRE_BLOCKS["friday"],          "friday",   fire_total_shift)
-    schedule_rows_shifted(FIRE_BLOCKS["saturday_early"],  "saturday", fire_total_shift)
-
-    # Sat evening -> Sun early
-    schedule_rows_shifted(FIRE_BLOCKS["saturday"],      "saturday", fire_total_shift)
-    schedule_rows_shifted(FIRE_BLOCKS["sunday_early"],  "sunday",   fire_total_shift)
-
-    # Sun evening -> Mon early
-    schedule_rows_shifted(FIRE_BLOCKS["sunday"],        "sunday",   fire_total_shift)
-    schedule_rows_shifted(FIRE_BLOCKS["monday_early"],  "monday",   fire_total_shift)
 
 def _graceful_exit(sig, _frame):
     logging.info(f"Received signal {sig}. Exiting scheduler loop.")
@@ -338,6 +336,27 @@ schedule_tasks()
 
 logging.info(f"Scheduler started. FIRE_SHIFT_HOURS={FIRE_SHIFT_HOURS} (fire program only)")
 logging.info(f"Process local time now: {datetime.now()} | UTC now: {datetime.utcnow()}")
+logging.info(f"Authoring mode: LOCAL | TZ={LOCAL_TZ}")
+
+# Optional: print a preview of the next few scheduled runs (local time)
+if PRINT_LOCAL_SCHEDULE:
+    try:
+        from collections import defaultdict
+        by_day = defaultdict(list)
+        for job in schedule.get_jobs():
+            # schedule computes next_run in process local time (we set TZ already)
+            nr = job.next_run
+            if nr is None:
+                continue
+            by_day[nr.strftime('%A').lower()].append((nr.strftime('%H:%M'), str(job.job_func)[10:]))
+        for d in DAY_ORDER:
+            rows = sorted(by_day.get(d, []), key=lambda p: p[0])[:PRINT_LIMIT_PER_DAY]
+            if rows:
+                print(f"\n=== {d.upper()} (next runs, local) ===")
+                for t, func in rows:
+                    print(f"{t} -> {func}")
+    except Exception as e:
+        logging.warning(f"Could not print schedule preview: {e}")
 
 # Run loop
 while True:
