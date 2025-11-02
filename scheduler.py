@@ -59,14 +59,19 @@ All times below are authored in ORLANDO local time (America/New_York).
 # Runner
 # --------------------------------------
 
-def run_script(script: str):
-    """Run the specified Python script under scripts/."""
+def run_script(script: str, scheduled_time: str | None = None):
     try:
-        msg = f"Running script: {script}"
+        now_str = datetime.now().strftime('%H:%M')
+        if scheduled_time:
+            # Simple, human-friendly line to match schedule rows
+            simple = f"{scheduled_time} — {script} is playing..."
+            print(simple)
+            logging.info(simple)
+        msg = f"[{now_str}] Running script: {script}"
         print(msg)
         logging.info(msg)
         subprocess.run(["python", f"scripts/{script}"], check=True)
-        ok = f"Script {script} ran successfully."
+        ok = f"[{now_str}] Script {script} ran successfully."
         print(ok)
         logging.info(ok)
     except subprocess.CalledProcessError as e:
@@ -105,7 +110,7 @@ def schedule_rows_shifted(rows, anchor_day: str, hours_shift: int):
             target_day = PREV_DAY[anchor_day]
         elif delta == 1:
             target_day = NEXT_DAY[anchor_day]
-        getattr(schedule.every(), target_day).at(shifted_tm).do(run_script, script=script_name)
+        getattr(schedule.every(), target_day).at(shifted_tm).do(run_script, script=script_name, scheduled_time=shifted_tm)
 
 # --------------------------------------
 # FIRE SHOW blocks (evening through early morning)
