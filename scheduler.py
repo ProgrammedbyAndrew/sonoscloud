@@ -11,7 +11,7 @@ from datetime import datetime, timedelta
 # CONFIG: set to -1 to start & end FIRE blocks 1 hour earlier (e.g., DST change)
 #         set to 0 to use original times.
 # -----------------------------------------------------------------------------
-FIRE_SHIFT_HOURS = 0         # <- change to -1 to start at 5:45pm instead of 6:45pm
+FIRE_SHIFT_HOURS = -1         # <- change to -1 to start at 5:45pm instead of 6:45pm
 
 # -------------------------
 # Logging & setup
