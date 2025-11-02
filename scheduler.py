@@ -55,31 +55,48 @@ All times below are authored in ORLANDO local time (America/New_York).
 ==========================================================
 """
 
+
+# --------------------------------------
+# Helpers
+# --------------------------------------
+def _to_ampm(hhmm: str) -> str:
+    """
+    Convert 'HH:MM' (24h) into a compact 'H[[:MM]]am/pm' string.
+    Examples: '12:00' -> '12pm', '00:00' -> '12am', '15:30' -> '3:30pm'
+    """
+    try:
+        h = int(hhmm[:2])
+        m = int(hhmm[3:5])
+    except Exception:
+        # If parsing fails, just return the input
+        return hhmm
+    suffix = "am" if h < 12 else "pm"
+    h12 = h % 12
+    if h12 == 0:
+        h12 = 12
+    if m == 0:
+        return f"{h12}{suffix}"
+    else:
+        return f"{h12}:{m:02d}{suffix}"
+
 # --------------------------------------
 # Runner
 # --------------------------------------
 
 def run_script(script: str, scheduled_time: str | None = None):
     try:
-        now_str = datetime.now().strftime('%H:%M')
-        if scheduled_time:
-            # Simple, human-friendly line to match schedule rows
-            simple = f"{scheduled_time} — {script} is playing..."
-            print(simple)
-            logging.info(simple)
-        msg = f"[{now_str}] Running script: {script}"
-        print(msg)
-        logging.info(msg)
+        label_time = scheduled_time or datetime.now().strftime('%H:%M')
+        nice = _to_ampm(label_time)
+        line = f"{nice} program {script} is playing now..."
+        print(line)
+        logging.info(line)
         subprocess.run(["python", f"scripts/{script}"], check=True)
-        ok = f"[{now_str}] Script {script} ran successfully."
-        print(ok)
-        logging.info(ok)
     except subprocess.CalledProcessError as e:
-        err = f"Error running script {script}: {e}"
+        err = f"[{label_time}] ERROR running {script}: {e}"
         print(err)
         logging.error(err)
     except Exception as e:
-        err = f"Unexpected error running script {script}: {e}"
+        err = f"[{label_time}] Unexpected error running {script}: {e}"
         print(err)
         logging.error(err)
 
