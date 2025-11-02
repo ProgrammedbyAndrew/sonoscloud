@@ -337,25 +337,30 @@ logging.info(f"Scheduler started. FIRE_SHIFT_HOURS={FIRE_SHIFT_HOURS} (fire prog
 logging.info(f"Process local time now: {datetime.now()} | UTC now: {datetime.utcnow()}")
 logging.info(f"Authoring mode: LOCAL | TZ={LOCAL_TZ}")
 
-# Optional: print a preview of the next few scheduled runs (local time)
+# Optional: print a short summary of the schedule (local time)
 if PRINT_LOCAL_SCHEDULE:
     try:
-        from collections import defaultdict
-        by_day = defaultdict(list)
-        for job in schedule.get_jobs():
-            # schedule computes next_run in process local time (we set TZ already)
-            nr = job.next_run
-            if nr is None:
+        jobs = schedule.get_jobs()
+        print(f"\nLoaded {len(jobs)} scheduled jobs in {LOCAL_TZ}.")
+        # Find the absolute next job to run
+        next_job = None
+        for j in jobs:
+            if j.next_run is None:
                 continue
-            by_day[nr.strftime('%A').lower()].append((nr.strftime('%H:%M'), str(job.job_func)[10:]))
-        for d in DAY_ORDER:
-            rows = sorted(by_day.get(d, []), key=lambda p: p[0])[:PRINT_LIMIT_PER_DAY]
-            if rows:
-                print(f"\n=== {d.upper()} (next runs, local) ===")
-                for t, func in rows:
-                    print(f"{t} -> {func}")
+            if next_job is None or j.next_run < next_job.next_run:
+                next_job = j
+        if next_job:
+            # Try to print the script name if available
+            try:
+                script_name = ""
+                if hasattr(next_job.job_func, 'args') and next_job.job_func.args:
+                    script_name = next_job.job_func.args[0]
+                print(f"Next run: {next_job.next_run.strftime('%A %H:%M')} ({script_name})")
+            except Exception:
+                print(f"Next run: {next_job.next_run.strftime('%A %H:%M')}")
+        print("Scheduler running... Press Ctrl+C to exit.")
     except Exception as e:
-        logging.warning(f"Could not print schedule preview: {e}")
+        logging.warning(f"Could not summarize schedule: {e}")
 
 # Run loop
 while True:
