@@ -344,6 +344,22 @@ logging.info(f"Authoring mode: LOCAL | TZ={LOCAL_TZ}")
 
 # Optional: print a short summary of the schedule (local time)
 if PRINT_LOCAL_SCHEDULE:
+    def _job_script_name(job) -> str:
+        try:
+            jf = job.job_func
+            # Prefer kwargs as we register jobs with keyword args
+            if hasattr(jf, 'keywords') and isinstance(jf.keywords, dict):
+                name = jf.keywords.get('script')
+                if name:
+                    return str(name)
+            # Fallback to positional args
+            if hasattr(jf, 'args') and jf.args:
+                return str(jf.args[0])
+            # Last resort: best-effort parse from repr
+            r = repr(jf)
+            return r
+        except Exception:
+            return ""
     try:
         jobs = schedule.get_jobs()
         print(f"\nLoaded {len(jobs)} scheduled jobs in {LOCAL_TZ}.")
@@ -355,14 +371,12 @@ if PRINT_LOCAL_SCHEDULE:
             if next_job is None or j.next_run < next_job.next_run:
                 next_job = j
         if next_job:
-            # Try to print the script name if available
-            try:
-                script_name = ""
-                if hasattr(next_job.job_func, 'args') and next_job.job_func.args:
-                    script_name = next_job.job_func.args[0]
-                print(f"Next run: {next_job.next_run.strftime('%A %H:%M')} ({script_name})")
-            except Exception:
-                print(f"Next run: {next_job.next_run.strftime('%A %H:%M')}")
+            script_name = _job_script_name(next_job)
+            when_str = next_job.next_run.strftime('%A %H:%M')
+            if script_name:
+                print(f"Next run: {when_str} ({script_name})")
+            else:
+                print(f"Next run: {when_str}")
         print("Scheduler running... Press Ctrl+C to exit.")
     except Exception as e:
         logging.warning(f"Could not summarize schedule: {e}")
