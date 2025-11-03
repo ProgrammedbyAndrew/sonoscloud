@@ -87,9 +87,12 @@ DAY_ORDER = ["monday","tuesday","wednesday","thursday","friday","saturday","sund
 
 BLOCKS = {
     "monday": {
-        "AM": [],
+        "AM": [
+            ("00:00","65parking.py"), ("00:15","65sm.py"), ("00:30","65sm.py"), ("00:45","65sm.py"),
+            ("01:00","65parking.py"), ("01:15","65sm.py"), ("01:30","65sm.py"), ("01:45","65sm.py"),
+            ("02:00","pause.py"),
+        ],
         "DAY": [
-            ("10:41","65fm.py"),
             ("12:00","65fm.py"), ("12:15","65sm.py"), ("12:30","65fm.py"), ("12:45","65sm.py"),
             ("13:00","75TIGS.py"), ("13:15","65sm.py"), ("13:30","70fm.py"), ("13:45","70sm.py"),
             ("14:00","70parking.py"), ("14:15","75TIGS.py"), ("14:30","70fm.py"), ("14:45","70sm.py"),
