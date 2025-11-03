@@ -139,10 +139,10 @@ FIRE_BLOCKS = {
         ("18:45", "75fireparking.py"), ("19:00", "75fireparking.py"), ("19:50", "75adfire.py"),
     ],
     "tuesday_early": [
-        ("20:00", "75fireparking.py"), ("20:50", "75adfire.py"),
-        ("21:00", "75fireparking.py"), ("21:50", "75adfire.py"),
-        ("22:00", "75fireparking.py"), ("22:50", "75adfire.py"),
-        ("23:00", "75fireparking.py"),
+        ("00:00", "75fireparking.py"), ("00:50", "75adfire.py"),
+        ("01:00", "75fireparking.py"), ("01:50", "75adfire.py"),
+        ("02:00", "75fireparking.py"), ("02:50", "75adfire.py"),
+        ("03:00", "75fireparking.py"),
     ],
 
     # Tue evening -> Wed early
@@ -150,10 +150,10 @@ FIRE_BLOCKS = {
         ("18:45", "75fireparking.py"), ("19:00", "75fireparking.py"), ("19:50", "75adfire.py"),
     ],
     "wednesday_early": [
-        ("20:00", "75fireparking.py"), ("20:50", "75adfire.py"),
-        ("21:00", "75fireparking.py"), ("21:50", "75adfire.py"),
-        ("22:00", "75fireparking.py"), ("22:50", "75adfire.py"),
-        ("23:00", "75fireparking.py"),
+        ("00:00", "75fireparking.py"), ("00:50", "75adfire.py"),
+        ("01:00", "75fireparking.py"), ("01:50", "75adfire.py"),
+        ("02:00", "75fireparking.py"), ("02:50", "75adfire.py"),
+        ("03:00", "75fireparking.py"),
     ],
 
     # Wed evening -> Thu early (variant script name)
@@ -161,10 +161,10 @@ FIRE_BLOCKS = {
         ("18:45", "75parkingfire.py"), ("19:00", "75parkingfire.py"), ("19:50", "75adfire.py"),
     ],
     "thursday_early": [
-        ("20:00", "75parkingfire.py"), ("20:50", "75adfire.py"),
-        ("21:00", "75parkingfire.py"), ("21:50", "75adfire.py"),
-        ("22:00", "75parkingfire.py"), ("22:50", "75adfire.py"),
-        ("23:00", "75parkingfire.py"),
+        ("00:00", "75parkingfire.py"), ("00:50", "75adfire.py"),
+        ("01:00", "75parkingfire.py"), ("01:50", "75adfire.py"),
+        ("02:00", "75parkingfire.py"), ("02:50", "75adfire.py"),
+        ("03:00", "75parkingfire.py"),
     ],
 
     # Thu evening -> Fri early (85 series)
@@ -172,10 +172,10 @@ FIRE_BLOCKS = {
         ("18:45", "85fireparking.py"), ("19:00", "85fireparking.py"), ("19:50", "85adfire.py"),
     ],
     "friday_early": [
-        ("20:00", "85fireparking.py"), ("20:50", "85adfire.py"),
-        ("21:00", "85fireparking.py"), ("21:50", "75adfire.py"),
-        ("22:00", "75fireparking.py"), ("22:50", "75adfire.py"),
-        ("23:00", "75fireparking.py"),
+        ("00:00", "85fireparking.py"), ("00:50", "85adfire.py"),
+        ("01:00", "85fireparking.py"), ("01:50", "75adfire.py"),
+        ("02:00", "75fireparking.py"), ("02:50", "75adfire.py"),
+        ("03:00", "75fireparking.py"),
     ],
 
     # Fri evening -> Sat early (85 series)
@@ -183,10 +183,10 @@ FIRE_BLOCKS = {
         ("18:45", "85fireparking.py"), ("19:00", "85fireparking.py"), ("19:50", "85adfire.py"),
     ],
     "saturday_early": [
-        ("20:00", "85fireparking.py"), ("20:50", "85adfire.py"),
-        ("21:00", "85fireparking.py"), ("21:50", "80adfire.py"),
-        ("22:00", "85fireparking.py"), ("22:50", "80adfire.py"),
-        ("23:00", "85fireparking.py"),
+        ("00:00", "85fireparking.py"), ("00:50", "85adfire.py"),
+        ("01:00", "85fireparking.py"), ("01:50", "80adfire.py"),
+        ("02:00", "85fireparking.py"), ("02:50", "80adfire.py"),
+        ("03:00", "85fireparking.py"),
     ],
 
     # Sat evening -> Sun early (85 series)
@@ -194,10 +194,10 @@ FIRE_BLOCKS = {
         ("18:45", "85fireparking.py"), ("19:00", "85fireparking.py"), ("19:50", "85adfire.py"),
     ],
     "sunday_early": [
-        ("20:00", "85fireparking.py"), ("20:50", "85adfire.py"),
-        ("21:00", "85fireparking.py"), ("21:50", "85adfire.py"),
-        ("22:00", "85fireparking.py"), ("22:50", "80adfire.py"),
-        ("23:00", "75fireparking.py"),
+        ("00:00", "85fireparking.py"), ("00:50", "85adfire.py"),
+        ("01:00", "85fireparking.py"), ("01:50", "85adfire.py"),
+        ("02:00", "85fireparking.py"), ("02:50", "80adfire.py"),
+        ("03:00", "75fireparking.py"),
     ],
 
     # Sun evening -> Mon early (85 fire + 80 ads mix)
@@ -205,10 +205,10 @@ FIRE_BLOCKS = {
         ("18:45", "85fireparking.py"), ("19:20", "85fireparking.py"), ("19:50", "80adfire.py"),
     ],
     "monday_early": [
-        ("20:00", "85fireparking.py"), ("20:50", "80adfire.py"),
-        ("21:00", "75fireparking.py"), ("21:50", "75adfire.py"),
-        ("22:00", "75fireparking.py"), ("22:50", "75adfire.py"),
-        ("23:00", "75fireparking.py"),
+        ("00:00", "85fireparking.py"), ("00:50", "80adfire.py"),
+        ("01:00", "75fireparking.py"), ("01:50", "75adfire.py"),
+        ("02:00", "75fireparking.py"), ("02:50", "75adfire.py"),
+        ("03:00", "75fireparking.py"),
     ],
 }
 
