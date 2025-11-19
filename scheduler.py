@@ -152,12 +152,12 @@ BLOCKS = {
             ("17:00","80parking.py"), ("17:15","80sm.py"), ("17:30","80fm.py"),
         ],
         "PM_FIRE": [
-            ("17:45","75parkingfire.py"), ("18:00","75parkingfire.py"), ("18:50","75adfire.py"),
-            ("19:00","75parkingfire.py"), ("19:50","75adfire.py"),
-            ("20:00","75parkingfire.py"), ("20:50","75adfire.py"),
-            ("21:00","75parkingfire.py"), ("21:50","75adfire.py"),
-            ("22:00","75parkingfire.py"), ("22:50","75adfire.py"),
-            ("23:00","75parkingfire.py"),
+            ("17:45","75fireparking.py"), ("18:00","75fireparking.py"), ("18:50","75adfire.py"),
+            ("19:00","75fireparking.py"), ("19:50","75adfire.py"),
+            ("20:00","75fireparking.py"), ("20:50","75adfire.py"),
+            ("21:00","75fireparking.py"), ("21:50","75adfire.py"),
+            ("22:00","75fireparking.py"), ("22:50","75adfire.py"),
+            ("23:00","75fireparking.py"),
         ],
     },
 
