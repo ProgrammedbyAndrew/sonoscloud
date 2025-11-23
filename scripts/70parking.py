@@ -221,7 +221,7 @@ async def main():
         await asyncio.sleep(17)
 
           # 2. Second announcement (playlist "35")
-        await load_favorite_playlist(group_id, "42", access_token, session)
+        await load_favorite_playlist(group_id, "44", access_token, session)
         await asyncio.gather(*[
             set_player_volume(info["id"], announcement_volumes[name], access_token, session)
             for name, info in speakers.items()
