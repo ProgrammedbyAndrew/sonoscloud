@@ -222,9 +222,17 @@ BLOCKS = {
             ("03:00","65parking.py"), ("03:15","65sm.py"), ("03:30","65sm.py"), ("03:45","65sm.py"),
             ("04:00","pause.py"),
         ],
-     
+        "DAY": [
+            ("11:00","75fm.py"), ("11:15","75sm.py"), ("11:30","75parking.py"), ("11:45","75sm.py"),
+            ("12:00","75parking.py"), ("12:15","75sm.py"), ("12:30","75fm.py"), ("12:45","75sm.py"),
+            ("13:00","75parking.py"), ("13:15","75sm.py"), ("13:30","75fm.py"), ("13:45","75sm.py"),
+            ("14:00","75parking.py"), ("14:15","75sm.py"), ("14:30","75ad.py"), ("14:45","75sm.py"),
+            ("15:00","75parking.py"), ("15:15","75sm.py"), ("15:30","75ad.py"), ("15:45","75sm.py"),
+            ("16:00","75parking.py"), ("16:15","75sm.py"),
+            ("17:00","85parking.py"), ("17:15","85sm.py"), ("17:30","85ad.py"),
+        ],
         "PM_FIRE": [
-            ("14:50","85fireparking.py"), ("18:00","85fireparking.py"), ("18:50","85adfire.py"),
+            ("17:45","85fireparking.py"), ("18:00","85fireparking.py"), ("18:50","85adfire.py"),
             ("19:00","85fireparking.py"), ("19:50","85adfire.py"),
             ("20:00","85fireparking.py"), ("20:50","85adfire.py"),
             ("21:00","85fireparking.py"), ("21:50","85adfire.py"),
