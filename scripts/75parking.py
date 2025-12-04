@@ -188,7 +188,7 @@ async def main():
         await play_group(group_id, token, session)
         await asyncio.sleep(24)
 
-        await load_favorite_playlist(group_id, "36", token, session)
+        await load_favorite_playlist(group_id, "33", token, session)
         await asyncio.gather(*[set_player_volume(pid, main_volumes[name], token, session) for name, pid in speakers.items()])
         await play_group(group_id, token, session)
 
