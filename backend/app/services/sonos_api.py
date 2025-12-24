@@ -215,6 +215,32 @@ class SonosAPI:
                 raise Exception(f"Error loading favorite: {response.status} - {text}")
             return True
 
+    async def get_player_volume(self, player_id: str) -> int:
+        """Get volume for a specific player"""
+        session = await self.get_session()
+        headers = await self.get_headers()
+        url = f"https://api.ws.sonos.com/control/api/v1/players/{player_id}/playerVolume"
+
+        async with session.get(url, headers=headers, ssl=ssl_context) as response:
+            if response.status != 200:
+                text = await response.text()
+                raise Exception(f"Error getting volume: {response.status} - {text}")
+            data = await response.json()
+            return data.get("volume", 0)
+
+    async def get_all_volumes(self) -> dict:
+        """Get volumes for all speakers"""
+        async def get_vol(name: str, player_id: str):
+            try:
+                vol = await self.get_player_volume(player_id)
+                return (name, vol)
+            except:
+                return (name, None)
+
+        tasks = [get_vol(name, pid) for name, pid in settings.speakers.items()]
+        results = await asyncio.gather(*tasks)
+        return dict(results)
+
     async def set_player_volume(self, player_id: str, volume: int) -> bool:
         """Set volume for a specific player"""
         session = await self.get_session()

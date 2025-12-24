@@ -1,3 +1,4 @@
+import asyncio
 from fastapi import APIRouter, HTTPException
 from ..models import Speaker, SpeakerVolume, AllSpeakersVolume
 from ..services.sonos_api import sonos_api
@@ -9,10 +10,13 @@ settings = get_settings()
 
 @router.get("", response_model=list[Speaker])
 async def get_speakers():
-    """Get all speakers with their status"""
+    """Get all speakers with their status and live volumes"""
     try:
-        # Get groups to check which speakers are online/grouped
-        groups = await sonos_api.get_groups()
+        # Get groups and volumes in parallel
+        groups, volumes = await asyncio.gather(
+            sonos_api.get_groups(),
+            sonos_api.get_all_volumes()
+        )
 
         # Build set of all grouped player IDs
         grouped_players = set()
@@ -26,7 +30,7 @@ async def get_speakers():
                 name=name,
                 is_online=player_id in grouped_players,
                 is_grouped=len(grouped_players) == len(settings.speakers),
-                volume=None  # Volume requires separate API call per speaker
+                volume=volumes.get(name)  # Live volume from Sonos
             ))
 
         return speakers
