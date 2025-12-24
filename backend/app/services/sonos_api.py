@@ -286,6 +286,18 @@ class SonosAPI:
                 raise Exception(f"Error getting playback status: {response.status} - {text}")
             return await response.json()
 
+    async def get_playback_metadata(self, group_id: str) -> dict:
+        """Get current track metadata for a group"""
+        session = await self.get_session()
+        headers = await self.get_headers()
+        url = f"https://api.ws.sonos.com/control/api/v1/groups/{group_id}/playbackMetadata"
+
+        async with session.get(url, headers=headers, ssl=ssl_context) as response:
+            if response.status != 200:
+                text = await response.text()
+                raise Exception(f"Error getting metadata: {response.status} - {text}")
+            return await response.json()
+
     async def play_favorite_with_volume(self, favorite_id: str, volume: int) -> bool:
         """Load a favorite and play it with specified volume"""
         group_id = await self.ensure_group()

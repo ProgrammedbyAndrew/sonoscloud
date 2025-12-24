@@ -6,7 +6,7 @@ from ..services.scheduler_service import scheduler_service
 router = APIRouter(prefix="/playback", tags=["playback"])
 
 
-@router.get("/status", response_model=PlaybackStatus)
+@router.get("/status")
 async def get_playback_status():
     """Get current playback status"""
     try:
@@ -16,19 +16,39 @@ async def get_playback_status():
         # Get playback info
         status = await sonos_api.get_playback_status(group_id)
 
+        # Get track metadata
+        metadata = await sonos_api.get_playback_metadata(group_id)
+
         # Get next scheduled item
         next_job = scheduler_service.get_next_job()
 
         is_playing = status.get("playbackState") == "PLAYBACK_STATE_PLAYING"
 
-        return PlaybackStatus(
-            is_playing=is_playing,
-            current_program=scheduler_service.current_program,
-            current_volume=None,  # Would need to query individual speakers
-            group_id=group_id,
-            next_scheduled=next_job["program"] if next_job else None,
-            next_scheduled_time=f"{next_job['day']} {next_job['time']}" if next_job else None
-        )
+        # Extract track info from metadata
+        current_item = metadata.get("currentItem", {})
+        track = current_item.get("track", {})
+        track_name = track.get("name")
+        artist = track.get("artist", {}).get("name")
+        album = track.get("album", {}).get("name")
+        image_url = track.get("imageUrl")
+
+        # Get container info (station/playlist name)
+        container = metadata.get("container", {})
+        container_name = container.get("name")
+
+        return {
+            "is_playing": is_playing,
+            "current_program": scheduler_service.current_program,
+            "track_name": track_name,
+            "artist": artist,
+            "album": album,
+            "image_url": image_url,
+            "station": container_name,
+            "current_volume": None,
+            "group_id": group_id,
+            "next_scheduled": next_job["program"] if next_job else None,
+            "next_scheduled_time": f"{next_job['day']} {next_job['time']}" if next_job else None
+        }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
