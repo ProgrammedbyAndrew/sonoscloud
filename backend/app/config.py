@@ -1,22 +1,40 @@
 from pydantic_settings import BaseSettings
-from functools import lru_cache
+from pydantic import Field
 import os
 
 
 class Settings(BaseSettings):
-    # Sonos API Credentials
-    sonos_client_id: str = "1b66f808-68aa-47db-92dd-13ee474757ba"
-    sonos_client_secret: str = "61510ebb-aad5-4691-9efa-05c81260df92"
-    sonos_refresh_token: str = "pWPbYeKxsAsQQGemUiAzuTTxltXOisfu"
+    # Sonos API Credentials - load from env vars with explicit names
+    sonos_client_id: str = Field(
+        default="1b66f808-68aa-47db-92dd-13ee474757ba",
+        validation_alias="SONOS_CLIENT_ID"
+    )
+    sonos_client_secret: str = Field(
+        default="61510ebb-aad5-4691-9efa-05c81260df92",
+        validation_alias="SONOS_CLIENT_SECRET"
+    )
+    sonos_refresh_token: str = Field(
+        default="pWPbYeKxsAsQQGemUiAzuTTxltXOisfu",
+        validation_alias="SONOS_REFRESH_TOKEN"
+    )
 
     # API Settings
-    api_secret_key: str = "sonos-cloud-secret-key-change-in-production"
+    api_secret_key: str = Field(
+        default="sonos-cloud-secret-key-change-in-production",
+        validation_alias="API_SECRET_KEY"
+    )
 
     # Database
-    database_url: str = "sqlite:///./sonos_cloud.db"
+    database_url: str = Field(
+        default="sqlite:///./sonos_cloud.db",
+        validation_alias="DATABASE_URL"
+    )
 
     # Timezone
-    timezone: str = "America/New_York"
+    timezone: str = Field(
+        default="America/New_York",
+        validation_alias="TIMEZONE"
+    )
 
     # CORS Origins (for frontend)
     cors_origins: list[str] = ["*"]
@@ -39,6 +57,11 @@ class Settings(BaseSettings):
         extra = "allow"
 
 
-@lru_cache()
+# Create settings instance - no caching to ensure env vars are always read
+_settings = None
+
 def get_settings() -> Settings:
-    return Settings()
+    global _settings
+    if _settings is None:
+        _settings = Settings()
+    return _settings
