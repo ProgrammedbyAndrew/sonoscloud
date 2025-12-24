@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 PROGRAM_TYPE_NAMES = {
     "sm": "Social Media Ad",
     "ad": "Business Ad",
-    "fm": "Music",
+    "fm": "Flea Market Ad",
     "parking": "Parking Announcement",
     "adfire": "Fire Show Ad",
     "fireparking": "Fire Show Parking",

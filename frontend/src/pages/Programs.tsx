@@ -21,7 +21,7 @@ const TYPE_COLORS: Record<string, string> = {
 // Updated with correct names
 const TYPE_LABELS: Record<string, string> = {
   ad: 'Business Ads',
-  fm: 'Music',
+  fm: 'Flea Market Ads',
   sm: 'Social Media Ads',
   parking: 'Parking Announcements',
   TIGS: 'Gift Shop Ads',

@@ -34,7 +34,7 @@ const BLOCK_LABELS: Record<string, string> = {
 const PROGRAM_TYPE_NAMES: Record<string, string> = {
   sm: 'Social Media',
   ad: 'Business Ad',
-  fm: 'Music',
+  fm: 'Flea Market',
   parking: 'Parking',
   adfire: 'Fire Ad',
   fireparking: 'Fire Parking',
