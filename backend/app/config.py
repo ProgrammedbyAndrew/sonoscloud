@@ -19,7 +19,7 @@ class Settings(BaseSettings):
     timezone: str = "America/New_York"
 
     # CORS Origins (for frontend)
-    cors_origins: list[str] = ["http://localhost:5173", "http://localhost:3000", "https://sonos-cloud-frontend.onrender.com"]
+    cors_origins: list[str] = ["*"]
 
     # Speaker Configuration
     speakers: dict = {
