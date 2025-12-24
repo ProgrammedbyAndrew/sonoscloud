@@ -128,26 +128,29 @@ export function Dashboard() {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">Dashboard</h1>
-          <p className="text-gray-400">
+    <div className="space-y-4 pb-6">
+      {/* Header - Mobile optimized */}
+      <div className="flex items-start justify-between gap-2">
+        <div className="min-w-0 flex-1">
+          <h1 className="text-xl sm:text-2xl font-bold">Dashboard</h1>
+          <p className="text-sm text-gray-400 truncate">
             {systemStatus?.current_time_display || 'Loading...'}
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          <Badge variant={systemStatus?.status === 'healthy' ? 'success' : 'warning'}>
-            {systemStatus?.status === 'healthy' ? 'System Online' : 'System Degraded'}
+        <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
+          <Badge
+            variant={systemStatus?.status === 'healthy' ? 'success' : 'warning'}
+            className="text-xs whitespace-nowrap"
+          >
+            {systemStatus?.status === 'healthy' ? 'Online' : 'Degraded'}
           </Badge>
-          <Button variant="ghost" size="sm" onClick={fetchStatus}>
+          <Button variant="ghost" size="sm" onClick={fetchStatus} className="p-2">
             <RefreshCw className="w-4 h-4" />
           </Button>
         </div>
       </div>
 
-      {/* Fire Show Mode Toggle - Prominent Card */}
+      {/* Fire Show Mode Toggle - Mobile optimized */}
       <Card
         variant="elevated"
         className={clsx(
@@ -157,21 +160,21 @@ export function Dashboard() {
             : 'border-gray-700'
         )}
       >
-        <CardContent className="py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
+        <CardContent className="py-3 sm:py-4">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
+            <div className="flex items-center gap-3 flex-1 min-w-0">
               <div className={clsx(
-                'p-3 rounded-full',
+                'p-2 sm:p-3 rounded-full flex-shrink-0',
                 fireShowMode ? 'bg-orange-500 animate-pulse' : 'bg-gray-700'
               )}>
-                <Flame className={clsx('w-8 h-8', fireShowMode ? 'text-white' : 'text-gray-400')} />
+                <Flame className={clsx('w-6 h-6 sm:w-8 sm:h-8', fireShowMode ? 'text-white' : 'text-gray-400')} />
               </div>
-              <div>
-                <h2 className="text-xl font-bold">Fire Show Mode</h2>
-                <p className="text-sm text-gray-400">
+              <div className="min-w-0 flex-1">
+                <h2 className="text-lg sm:text-xl font-bold">Fire Show Mode</h2>
+                <p className="text-xs sm:text-sm text-gray-400 line-clamp-2">
                   {fireShowMode
-                    ? 'Running Fire Show Ad (85%) every hour - Resets at midnight'
-                    : 'Turn on for early fire show - Plays 85adfire.py hourly'}
+                    ? 'Fire Show Ad (85%) every hour'
+                    : 'Plays 85adfire.py hourly'}
                 </p>
               </div>
             </div>
@@ -180,229 +183,235 @@ export function Dashboard() {
               size="lg"
               onClick={handleToggleFireShowMode}
               disabled={actionLoading === 'fireshow'}
-              className="min-w-[140px]"
+              className="w-full sm:w-auto sm:min-w-[120px]"
             >
               <Power className="w-5 h-5 mr-2" />
               {fireShowMode ? 'Turn OFF' : 'Turn ON'}
             </Button>
           </div>
           {fireShowMode && (
-            <div className="mt-4 p-3 bg-orange-900/30 rounded-lg">
-              <p className="text-sm text-orange-300">
-                <strong>Active:</strong> Fire Show Ad @ 85% will play every hour.
-                Mode will automatically reset to regular programming at midnight (12:00 AM).
+            <div className="mt-3 p-2 sm:p-3 bg-orange-900/30 rounded-lg">
+              <p className="text-xs sm:text-sm text-orange-300">
+                <strong>Active:</strong> Resets at midnight
               </p>
             </div>
           )}
         </CardContent>
       </Card>
 
-      {/* Status Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {/* Now Playing */}
-        <Card variant="elevated" className="md:col-span-2">
-          <CardHeader>
-            <div className="flex items-center gap-2">
-              <Music className="w-5 h-5 text-orange-500" />
-              <h2 className="font-semibold">Now Playing</h2>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="flex gap-4">
-              {/* Album Art */}
-              {playbackStatus?.image_url ? (
-                <img
-                  src={playbackStatus.image_url}
-                  alt="Album art"
-                  className="w-24 h-24 rounded-lg object-cover"
-                />
+      {/* Now Playing - Mobile optimized */}
+      <Card variant="elevated">
+        <CardHeader className="pb-2">
+          <div className="flex items-center gap-2">
+            <Music className="w-5 h-5 text-orange-500" />
+            <h2 className="font-semibold">Now Playing</h2>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="flex gap-3 sm:gap-4">
+            {/* Album Art - Smaller on mobile */}
+            {playbackStatus?.image_url ? (
+              <img
+                src={playbackStatus.image_url}
+                alt="Album art"
+                className="w-16 h-16 sm:w-20 sm:h-20 rounded-lg object-cover flex-shrink-0"
+              />
+            ) : (
+              <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-lg bg-gray-800 flex items-center justify-center flex-shrink-0">
+                <Music className="w-8 h-8 sm:w-10 sm:h-10 text-gray-600" />
+              </div>
+            )}
+
+            {/* Track Info */}
+            <div className="flex-1 min-w-0 space-y-1">
+              <div className="flex items-center gap-2">
+                {playbackStatus?.is_playing ? (
+                  <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse flex-shrink-0" />
+                ) : (
+                  <span className="w-2 h-2 rounded-full bg-gray-500 flex-shrink-0" />
+                )}
+                <span className="text-xs text-gray-400 uppercase">
+                  {playbackStatus?.is_playing ? 'Playing' : 'Paused'}
+                </span>
+              </div>
+
+              {playbackStatus?.track_name ? (
+                <>
+                  <p className="text-sm sm:text-base font-semibold truncate">{playbackStatus.track_name}</p>
+                  {playbackStatus.artist && (
+                    <p className="text-xs sm:text-sm text-gray-400 truncate">{playbackStatus.artist}</p>
+                  )}
+                  {playbackStatus.station && (
+                    <p className="text-xs text-orange-500 truncate">{playbackStatus.station}</p>
+                  )}
+                </>
               ) : (
-                <div className="w-24 h-24 rounded-lg bg-gray-800 flex items-center justify-center">
-                  <Music className="w-10 h-10 text-gray-600" />
-                </div>
+                <p className="text-sm sm:text-base font-medium text-gray-400">
+                  {systemStatus?.scheduler.current_program
+                    ? getProgramDisplayName(systemStatus.scheduler.current_program)
+                    : 'Idle'}
+                </p>
               )}
 
-              {/* Track Info */}
-              <div className="flex-1 space-y-2">
-                <div className="flex items-center gap-2">
-                  {playbackStatus?.is_playing ? (
-                    <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-                  ) : (
-                    <span className="w-2 h-2 rounded-full bg-gray-500" />
-                  )}
-                  <span className="text-xs text-gray-400 uppercase">
-                    {playbackStatus?.is_playing ? 'Playing' : 'Paused'}
-                  </span>
-                </div>
-
-                {playbackStatus?.track_name ? (
-                  <>
-                    <p className="text-lg font-semibold truncate">{playbackStatus.track_name}</p>
-                    {playbackStatus.artist && (
-                      <p className="text-sm text-gray-400 truncate">{playbackStatus.artist}</p>
-                    )}
-                    {playbackStatus.station && (
-                      <p className="text-xs text-orange-500 truncate">{playbackStatus.station}</p>
-                    )}
-                  </>
-                ) : (
-                  <p className="text-lg font-medium text-gray-400">
-                    {systemStatus?.scheduler.current_program
-                      ? getProgramDisplayName(systemStatus.scheduler.current_program)
-                      : 'Idle'}
-                  </p>
-                )}
-
-                <div className="flex gap-2 pt-2">
-                  <Button
-                    size="sm"
-                    onClick={handlePlay}
-                    disabled={actionLoading === 'play'}
-                  >
-                    <Play className="w-4 h-4 mr-1" />
-                    Play
-                  </Button>
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    onClick={handlePause}
-                    disabled={actionLoading === 'pause'}
-                  >
-                    <Pause className="w-4 h-4 mr-1" />
-                    Pause
-                  </Button>
-                </div>
+              <div className="flex gap-2 pt-1">
+                <Button
+                  size="sm"
+                  onClick={handlePlay}
+                  disabled={actionLoading === 'play'}
+                  className="flex-1 sm:flex-none"
+                >
+                  <Play className="w-4 h-4 sm:mr-1" />
+                  <span className="hidden sm:inline">Play</span>
+                </Button>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={handlePause}
+                  disabled={actionLoading === 'pause'}
+                  className="flex-1 sm:flex-none"
+                >
+                  <Pause className="w-4 h-4 sm:mr-1" />
+                  <span className="hidden sm:inline">Pause</span>
+                </Button>
               </div>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </CardContent>
+      </Card>
 
+      {/* Status Cards - Stack on mobile */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
         {/* Next Up */}
         <Card variant="elevated">
-          <CardHeader>
+          <CardHeader className="pb-2">
             <div className="flex items-center gap-2">
               <Clock className="w-5 h-5 text-orange-500" />
-              <h2 className="font-semibold">Next Up</h2>
+              <h2 className="font-semibold text-sm sm:text-base">Next Up</h2>
             </div>
           </CardHeader>
           <CardContent>
             {systemStatus?.scheduler.next_job ? (
-              <div className="space-y-2">
-                <p className="text-lg font-medium">
+              <div className="space-y-1">
+                <p className="text-sm sm:text-base font-medium truncate">
                   {systemStatus.scheduler.next_job.display_name ||
                    getProgramDisplayName(systemStatus.scheduler.next_job.program)}
                 </p>
-                <p className="text-sm text-gray-400">
-                  {systemStatus.scheduler.next_job.day} at {systemStatus.scheduler.next_job.time}
+                <p className="text-xs sm:text-sm text-gray-400">
+                  {systemStatus.scheduler.next_job.day} @ {systemStatus.scheduler.next_job.time}
                 </p>
               </div>
             ) : (
-              <p className="text-gray-400">No upcoming programs</p>
+              <p className="text-sm text-gray-400">No upcoming programs</p>
             )}
           </CardContent>
         </Card>
 
         {/* Scheduler Status */}
         <Card variant="elevated">
-          <CardHeader>
+          <CardHeader className="pb-2">
             <div className="flex items-center gap-2">
               <Speaker className="w-5 h-5 text-orange-500" />
-              <h2 className="font-semibold">Scheduler</h2>
+              <h2 className="font-semibold text-sm sm:text-base">System</h2>
             </div>
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <span className="text-gray-400">Status</span>
-                <Badge variant={systemStatus?.scheduler.is_running ? 'success' : 'danger'}>
+                <span className="text-xs sm:text-sm text-gray-400">Scheduler</span>
+                <Badge variant={systemStatus?.scheduler.is_running ? 'success' : 'danger'} className="text-xs">
                   {systemStatus?.scheduler.is_running ? 'Running' : 'Stopped'}
                 </Badge>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-gray-400">Jobs Loaded</span>
-                <span className="font-medium">{systemStatus?.scheduler.job_count || 0}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-gray-400">Sonos API</span>
-                <Badge variant={systemStatus?.sonos_connected ? 'success' : 'danger'}>
-                  {systemStatus?.sonos_connected ? 'Connected' : 'Disconnected'}
+                <span className="text-xs sm:text-sm text-gray-400">Sonos</span>
+                <Badge variant={systemStatus?.sonos_connected ? 'success' : 'danger'} className="text-xs">
+                  {systemStatus?.sonos_connected ? 'Connected' : 'Offline'}
                 </Badge>
               </div>
+              <div className="flex items-center justify-between">
+                <span className="text-xs sm:text-sm text-gray-400">Jobs</span>
+                <span className="text-xs sm:text-sm font-medium">{systemStatus?.scheduler.job_count || 0}</span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Volume Control - Full width on mobile */}
+        <Card className="sm:col-span-2 lg:col-span-1">
+          <CardHeader className="pb-2">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Volume2 className="w-5 h-5 text-orange-500" />
+                <h2 className="font-semibold text-sm sm:text-base">Volume</h2>
+              </div>
+              <span className="text-lg font-bold text-orange-500">{volume}%</span>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center gap-3">
+              <div className="flex-1">
+                <Slider
+                  min={0}
+                  max={100}
+                  value={volume}
+                  onChange={(e) => handleVolumeChange(Number(e.target.value))}
+                  onMouseUp={handleVolumeCommit}
+                  onTouchEnd={handleVolumeCommit}
+                  className="h-3"
+                />
+              </div>
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={handleVolumeCommit}
+                disabled={actionLoading === 'volume'}
+                className="px-4"
+              >
+                Set
+              </Button>
             </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Volume Control */}
+      {/* Quick Actions - 2x2 on mobile, 4 across on desktop */}
       <Card>
-        <CardHeader>
-          <div className="flex items-center gap-2">
-            <Volume2 className="w-5 h-5 text-orange-500" />
-            <h2 className="font-semibold">Master Volume</h2>
-          </div>
+        <CardHeader className="pb-2">
+          <h2 className="font-semibold text-sm sm:text-base">Quick Actions</h2>
         </CardHeader>
         <CardContent>
-          <div className="flex items-center gap-4">
-            <div className="flex-1">
-              <Slider
-                min={0}
-                max={100}
-                value={volume}
-                onChange={(e) => handleVolumeChange(Number(e.target.value))}
-                onMouseUp={handleVolumeCommit}
-                onTouchEnd={handleVolumeCommit}
-              />
-            </div>
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={handleVolumeCommit}
-              disabled={actionLoading === 'volume'}
-            >
-              Set
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Quick Actions */}
-      <Card>
-        <CardHeader>
-          <h2 className="font-semibold">Quick Actions</h2>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
             <Button
               variant="secondary"
               onClick={() => api.runProgram('75fm.py')}
-              className="flex flex-col items-center py-4"
+              className="flex flex-col items-center py-3 sm:py-4 h-auto"
             >
-              <Music className="w-6 h-6 mb-2" />
-              <span>Music @ 75%</span>
+              <Music className="w-5 h-5 sm:w-6 sm:h-6 mb-1 sm:mb-2" />
+              <span className="text-xs sm:text-sm">Music 75%</span>
             </Button>
             <Button
               variant="secondary"
               onClick={() => api.runProgram('85ad.py')}
-              className="flex flex-col items-center py-4"
+              className="flex flex-col items-center py-3 sm:py-4 h-auto"
             >
-              <Volume2 className="w-6 h-6 mb-2" />
-              <span>Business Ad @ 85%</span>
+              <Volume2 className="w-5 h-5 sm:w-6 sm:h-6 mb-1 sm:mb-2" />
+              <span className="text-xs sm:text-sm">Ad 85%</span>
             </Button>
             <Button
               variant="secondary"
               onClick={() => api.runProgram('75parking.py')}
-              className="flex flex-col items-center py-4"
+              className="flex flex-col items-center py-3 sm:py-4 h-auto"
             >
-              <Speaker className="w-6 h-6 mb-2" />
-              <span>Parking @ 75%</span>
+              <Speaker className="w-5 h-5 sm:w-6 sm:h-6 mb-1 sm:mb-2" />
+              <span className="text-xs sm:text-sm">Parking 75%</span>
             </Button>
             <Button
               variant="danger"
               onClick={handlePause}
-              className="flex flex-col items-center py-4"
+              className="flex flex-col items-center py-3 sm:py-4 h-auto"
             >
-              <Pause className="w-6 h-6 mb-2" />
-              <span>Pause All</span>
+              <Pause className="w-5 h-5 sm:w-6 sm:h-6 mb-1 sm:mb-2" />
+              <span className="text-xs sm:text-sm">Pause All</span>
             </Button>
           </div>
         </CardContent>
