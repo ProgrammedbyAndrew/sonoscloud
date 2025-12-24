@@ -1,0 +1,47 @@
+# Render.com deployment configuration
+# https://render.com/docs/blueprint-spec
+
+services:
+  # Backend API Service
+  - type: web
+    name: sonos-cloud-api
+    runtime: python
+    region: ohio  # Closest to Orlando
+    plan: free
+    buildCommand: pip install -r backend/requirements.txt
+    startCommand: cd backend && uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: SONOS_CLIENT_ID
+        sync: false
+      - key: SONOS_CLIENT_SECRET
+        sync: false
+      - key: SONOS_REFRESH_TOKEN
+        sync: false
+      - key: API_SECRET_KEY
+        generateValue: true
+      - key: DATABASE_URL
+        value: sqlite:///./sonos_cloud.db
+      - key: TIMEZONE
+        value: America/New_York
+      - key: PYTHON_VERSION
+        value: "3.11"
+    healthCheckPath: /api/v1/system/health
+    autoDeploy: true
+
+  # Frontend Static Site
+  - type: static
+    name: sonos-cloud-frontend
+    buildCommand: cd frontend && npm install && npm run build
+    staticPublishPath: frontend/dist
+    pullRequestPreviewsEnabled: true
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    headers:
+      - path: /*
+        name: Cache-Control
+        value: public, max-age=0, must-revalidate
+    envVars:
+      - key: VITE_API_URL
+        value: https://sonos-cloud-api.onrender.com
