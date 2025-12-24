@@ -16,25 +16,32 @@ async def get_playback_status():
         # Get playback info
         status = await sonos_api.get_playback_status(group_id)
 
-        # Get track metadata
-        metadata = await sonos_api.get_playback_metadata(group_id)
-
         # Get next scheduled item
         next_job = scheduler_service.get_next_job()
 
         is_playing = status.get("playbackState") == "PLAYBACK_STATE_PLAYING"
 
-        # Extract track info from metadata
-        current_item = metadata.get("currentItem", {})
-        track = current_item.get("track", {})
-        track_name = track.get("name")
-        artist = track.get("artist", {}).get("name")
-        album = track.get("album", {}).get("name")
-        image_url = track.get("imageUrl")
+        # Try to get track metadata (may fail if nothing playing)
+        track_name = None
+        artist = None
+        album = None
+        image_url = None
+        container_name = None
 
-        # Get container info (station/playlist name)
-        container = metadata.get("container", {})
-        container_name = container.get("name")
+        try:
+            metadata = await sonos_api.get_playback_metadata(group_id)
+            current_item = metadata.get("currentItem", {})
+            track = current_item.get("track", {})
+            track_name = track.get("name")
+            artist_info = track.get("artist")
+            artist = artist_info.get("name") if isinstance(artist_info, dict) else None
+            album_info = track.get("album")
+            album = album_info.get("name") if isinstance(album_info, dict) else None
+            image_url = track.get("imageUrl")
+            container = metadata.get("container", {})
+            container_name = container.get("name") if isinstance(container, dict) else None
+        except Exception:
+            pass  # Metadata not available, continue without it
 
         return {
             "is_playing": is_playing,
