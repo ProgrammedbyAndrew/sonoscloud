@@ -68,7 +68,7 @@ export function Dashboard() {
       const [system, playback, logsData] = await Promise.all([
         api.getSystemStatus(),
         api.getPlaybackStatus(),
-        api.getLogs(15),
+        api.getExecutionLogs(15),
       ]);
       setSystemStatus(system as SystemStatus);
       setPlaybackStatus(playback as PlaybackStatus);
