@@ -61,6 +61,11 @@ export interface PlaybackStatus {
   group_id: string | null;
   next_scheduled: string | null;
   next_scheduled_time: string | null;
+  track_name: string | null;
+  artist: string | null;
+  album: string | null;
+  image_url: string | null;
+  station: string | null;
 }
 
 // System Types

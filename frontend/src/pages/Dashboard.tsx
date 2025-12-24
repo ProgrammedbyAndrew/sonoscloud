@@ -200,7 +200,7 @@ export function Dashboard() {
       {/* Status Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {/* Now Playing */}
-        <Card variant="elevated">
+        <Card variant="elevated" className="md:col-span-2">
           <CardHeader>
             <div className="flex items-center gap-2">
               <Music className="w-5 h-5 text-orange-500" />
@@ -208,37 +208,70 @@ export function Dashboard() {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="space-y-3">
-              <div className="flex items-center gap-2">
-                {playbackStatus?.is_playing ? (
-                  <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+            <div className="flex gap-4">
+              {/* Album Art */}
+              {playbackStatus?.image_url ? (
+                <img
+                  src={playbackStatus.image_url}
+                  alt="Album art"
+                  className="w-24 h-24 rounded-lg object-cover"
+                />
+              ) : (
+                <div className="w-24 h-24 rounded-lg bg-gray-800 flex items-center justify-center">
+                  <Music className="w-10 h-10 text-gray-600" />
+                </div>
+              )}
+
+              {/* Track Info */}
+              <div className="flex-1 space-y-2">
+                <div className="flex items-center gap-2">
+                  {playbackStatus?.is_playing ? (
+                    <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                  ) : (
+                    <span className="w-2 h-2 rounded-full bg-gray-500" />
+                  )}
+                  <span className="text-xs text-gray-400 uppercase">
+                    {playbackStatus?.is_playing ? 'Playing' : 'Paused'}
+                  </span>
+                </div>
+
+                {playbackStatus?.track_name ? (
+                  <>
+                    <p className="text-lg font-semibold truncate">{playbackStatus.track_name}</p>
+                    {playbackStatus.artist && (
+                      <p className="text-sm text-gray-400 truncate">{playbackStatus.artist}</p>
+                    )}
+                    {playbackStatus.station && (
+                      <p className="text-xs text-orange-500 truncate">{playbackStatus.station}</p>
+                    )}
+                  </>
                 ) : (
-                  <span className="w-2 h-2 rounded-full bg-gray-500" />
+                  <p className="text-lg font-medium text-gray-400">
+                    {systemStatus?.scheduler.current_program
+                      ? getProgramDisplayName(systemStatus.scheduler.current_program)
+                      : 'Idle'}
+                  </p>
                 )}
-                <span className="text-lg font-medium">
-                  {systemStatus?.scheduler.current_program
-                    ? getProgramDisplayName(systemStatus.scheduler.current_program)
-                    : 'Idle'}
-                </span>
-              </div>
-              <div className="flex gap-2">
-                <Button
-                  size="sm"
-                  onClick={handlePlay}
-                  disabled={actionLoading === 'play'}
-                >
-                  <Play className="w-4 h-4 mr-1" />
-                  Play
-                </Button>
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  onClick={handlePause}
-                  disabled={actionLoading === 'pause'}
-                >
-                  <Pause className="w-4 h-4 mr-1" />
-                  Pause
-                </Button>
+
+                <div className="flex gap-2 pt-2">
+                  <Button
+                    size="sm"
+                    onClick={handlePlay}
+                    disabled={actionLoading === 'play'}
+                  >
+                    <Play className="w-4 h-4 mr-1" />
+                    Play
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={handlePause}
+                    disabled={actionLoading === 'pause'}
+                  >
+                    <Pause className="w-4 h-4 mr-1" />
+                    Pause
+                  </Button>
+                </div>
               </div>
             </div>
           </CardContent>
