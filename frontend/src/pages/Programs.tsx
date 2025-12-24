@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
-import { Music, Play, Volume2, RefreshCw, Filter } from 'lucide-react';
+import { Music, Play, Volume2, RefreshCw, Filter, Lock } from 'lucide-react';
 import { Card, CardHeader, CardContent } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
 import { api } from '../api/client';
+import { useAuth } from '../context/AuthContext';
 import type { Program } from '../types';
 import { clsx } from 'clsx';
 
@@ -31,6 +32,7 @@ const TYPE_LABELS: Record<string, string> = {
 };
 
 export function Programs() {
+  const { isLoggedIn } = useAuth();
   const [programs, setPrograms] = useState<Program[]>([]);
   const [selectedType, setSelectedType] = useState<string>('all');
   const [loading, setLoading] = useState(true);
@@ -160,10 +162,13 @@ export function Programs() {
                     <button
                       key={program.name}
                       onClick={() => handlePlayProgram(program.name)}
-                      disabled={playingProgram === program.name}
+                      disabled={playingProgram === program.name || !isLoggedIn}
+                      title={!isLoggedIn ? 'Login required' : undefined}
                       className={clsx(
                         'flex flex-col items-center p-4 rounded-lg border transition-all',
-                        'bg-gray-800 border-gray-700 hover:border-orange-500 hover:bg-gray-750',
+                        !isLoggedIn
+                          ? 'bg-gray-900 border-gray-800 opacity-60 cursor-not-allowed'
+                          : 'bg-gray-800 border-gray-700 hover:border-orange-500 hover:bg-gray-750',
                         playingProgram === program.name && 'border-green-500 bg-green-900/20'
                       )}
                     >
@@ -178,6 +183,8 @@ export function Programs() {
                         <Badge variant="success" className="mt-2">
                           Playing...
                         </Badge>
+                      ) : !isLoggedIn ? (
+                        <Lock className="w-4 h-4 mt-2 text-gray-600" />
                       ) : (
                         <Play className="w-4 h-4 mt-2 text-gray-500" />
                       )}

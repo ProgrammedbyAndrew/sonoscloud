@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
-import { Calendar, Clock, Play, Trash2, RefreshCw, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Calendar, Clock, Play, Trash2, RefreshCw, ChevronLeft, ChevronRight, Lock } from 'lucide-react';
 import { Card, CardHeader, CardContent } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
 import { api } from '../api/client';
+import { useAuth } from '../context/AuthContext';
 import type { ScheduleSlot } from '../types';
 import { clsx } from 'clsx';
 
@@ -43,6 +44,7 @@ const PROGRAM_TYPE_NAMES: Record<string, string> = {
 };
 
 export function Schedule() {
+  const { isLoggedIn } = useAuth();
   const [schedule, setSchedule] = useState<Record<string, ScheduleSlot[]>>({});
   const [selectedDay, setSelectedDay] = useState(() => {
     const today = new Date().toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
@@ -221,18 +223,21 @@ export function Schedule() {
                           variant="ghost"
                           size="sm"
                           onClick={() => handleRunProgram(slot.program_name, slot.id)}
-                          disabled={actionLoading === slot.id}
+                          disabled={actionLoading === slot.id || !isLoggedIn}
                           className="p-1"
+                          title={!isLoggedIn ? 'Login required' : undefined}
                         >
-                          <Play className="w-4 h-4" />
+                          {!isLoggedIn ? <Lock className="w-4 h-4" /> : <Play className="w-4 h-4" />}
                         </Button>
                         <Button
                           variant="ghost"
                           size="sm"
                           onClick={() => handleDeleteSlot(slot.id)}
+                          disabled={!isLoggedIn}
                           className="p-1 text-red-400 hover:text-red-300"
+                          title={!isLoggedIn ? 'Login required' : undefined}
                         >
-                          <Trash2 className="w-4 h-4" />
+                          {!isLoggedIn ? <Lock className="w-4 h-4" /> : <Trash2 className="w-4 h-4" />}
                         </Button>
                       </div>
                     </div>

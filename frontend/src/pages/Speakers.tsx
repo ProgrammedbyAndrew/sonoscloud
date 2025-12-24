@@ -1,14 +1,16 @@
 import { useEffect, useState } from 'react';
-import { Speaker as SpeakerIcon, Volume2, RefreshCw, Link2, Wifi, Flame } from 'lucide-react';
+import { Speaker as SpeakerIcon, Volume2, RefreshCw, Link2, Wifi, Flame, Lock } from 'lucide-react';
 import { Card, CardHeader, CardContent } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
 import { Slider } from '../components/ui/Slider';
 import { api } from '../api/client';
+import { useAuth } from '../context/AuthContext';
 import type { Speaker, SpeakerLayout } from '../types';
 import { clsx } from 'clsx';
 
 export function Speakers() {
+  const { isLoggedIn } = useAuth();
   const [speakers, setSpeakers] = useState<Speaker[]>([]);
   const [layout, setLayout] = useState<SpeakerLayout | null>(null);
   const [loading, setLoading] = useState(true);
@@ -135,9 +137,10 @@ export function Speakers() {
             variant="secondary"
             size="sm"
             onClick={handleGroupAll}
-            disabled={actionLoading === 'group'}
+            disabled={actionLoading === 'group' || !isLoggedIn}
+            title={!isLoggedIn ? 'Login required' : undefined}
           >
-            <Link2 className="w-4 h-4 sm:mr-2" />
+            {!isLoggedIn ? <Lock className="w-4 h-4 sm:mr-2" /> : <Link2 className="w-4 h-4 sm:mr-2" />}
             <span className="hidden sm:inline">Group All</span>
           </Button>
         </div>
@@ -207,14 +210,16 @@ export function Speakers() {
                 max={100}
                 value={masterVolume}
                 onChange={(e) => setMasterVolume(Number(e.target.value))}
+                disabled={!isLoggedIn}
               />
             </div>
             <Button
               onClick={handleSetMasterVolume}
-              disabled={actionLoading === 'volume'}
+              disabled={actionLoading === 'volume' || !isLoggedIn}
               size="sm"
+              title={!isLoggedIn ? 'Login required' : undefined}
             >
-              Set All
+              {!isLoggedIn ? <Lock className="w-4 h-4" /> : 'Set All'}
             </Button>
           </div>
         </CardContent>
@@ -337,7 +342,7 @@ export function Speakers() {
                         max={100}
                         value={speakerVolumes[speaker.name] ?? volume}
                         onChange={(e) => handleSpeakerVolumeChange(speaker.name, Number(e.target.value))}
-                        disabled={!speaker.is_online}
+                        disabled={!speaker.is_online || !isLoggedIn}
                       />
                     </div>
                     <span className={clsx(
@@ -349,11 +354,12 @@ export function Speakers() {
                     <Button
                       variant={muted ? 'danger' : 'secondary'}
                       size="sm"
-                      disabled={!speaker.is_online || actionLoading === speaker.name}
+                      disabled={!speaker.is_online || actionLoading === speaker.name || !isLoggedIn}
                       onClick={() => handleSetSpeakerVolume(speaker.name)}
                       className="min-w-[60px]"
+                      title={!isLoggedIn ? 'Login required' : undefined}
                     >
-                      {actionLoading === speaker.name ? '...' : 'Set'}
+                      {!isLoggedIn ? <Lock className="w-4 h-4" /> : actionLoading === speaker.name ? '...' : 'Set'}
                     </Button>
                   </div>
                 </div>

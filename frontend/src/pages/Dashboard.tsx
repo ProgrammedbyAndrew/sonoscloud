@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
-import { Play, Pause, Volume2, RefreshCw, Clock, Speaker, Music, Flame, Power, Activity, CheckCircle, XCircle } from 'lucide-react';
+import { Play, Pause, Volume2, RefreshCw, Clock, Speaker, Music, Flame, Power, Activity, CheckCircle, XCircle, Lock } from 'lucide-react';
 import { Card, CardHeader, CardContent } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
 import { Slider } from '../components/ui/Slider';
 import { api } from '../api/client';
+import { useAuth } from '../context/AuthContext';
 import type { SystemStatus, PlaybackStatus } from '../types';
 import { clsx } from 'clsx';
 
@@ -55,6 +56,7 @@ function formatTimeAgo(dateString: string): string {
 }
 
 export function Dashboard() {
+  const { isLoggedIn } = useAuth();
   const [systemStatus, setSystemStatus] = useState<SystemStatus | null>(null);
   const [playbackStatus, setPlaybackStatus] = useState<PlaybackStatus | null>(null);
   const [logs, setLogs] = useState<LogEntry[]>([]);
@@ -281,20 +283,22 @@ export function Dashboard() {
                 <Button
                   size="sm"
                   onClick={handlePlay}
-                  disabled={actionLoading === 'play'}
+                  disabled={actionLoading === 'play' || !isLoggedIn}
                   className="flex-1 sm:flex-none"
+                  title={!isLoggedIn ? 'Login required' : undefined}
                 >
-                  <Play className="w-4 h-4 sm:mr-1" />
+                  {!isLoggedIn ? <Lock className="w-4 h-4 sm:mr-1" /> : <Play className="w-4 h-4 sm:mr-1" />}
                   <span className="hidden sm:inline">Play</span>
                 </Button>
                 <Button
                   variant="secondary"
                   size="sm"
                   onClick={handlePause}
-                  disabled={actionLoading === 'pause'}
+                  disabled={actionLoading === 'pause' || !isLoggedIn}
                   className="flex-1 sm:flex-none"
+                  title={!isLoggedIn ? 'Login required' : undefined}
                 >
-                  <Pause className="w-4 h-4 sm:mr-1" />
+                  {!isLoggedIn ? <Lock className="w-4 h-4 sm:mr-1" /> : <Pause className="w-4 h-4 sm:mr-1" />}
                   <span className="hidden sm:inline">Pause</span>
                 </Button>
               </div>
@@ -379,19 +383,21 @@ export function Dashboard() {
                   max={100}
                   value={volume}
                   onChange={(e) => handleVolumeChange(Number(e.target.value))}
-                  onMouseUp={handleVolumeCommit}
-                  onTouchEnd={handleVolumeCommit}
+                  onMouseUp={isLoggedIn ? handleVolumeCommit : undefined}
+                  onTouchEnd={isLoggedIn ? handleVolumeCommit : undefined}
                   className="h-3"
+                  disabled={!isLoggedIn}
                 />
               </div>
               <Button
                 variant="primary"
                 size="sm"
                 onClick={handleVolumeCommit}
-                disabled={actionLoading === 'volume'}
+                disabled={actionLoading === 'volume' || !isLoggedIn}
                 className="px-4"
+                title={!isLoggedIn ? 'Login required' : undefined}
               >
-                Set
+                {!isLoggedIn ? <Lock className="w-4 h-4" /> : 'Set'}
               </Button>
             </div>
           </CardContent>
@@ -409,32 +415,40 @@ export function Dashboard() {
               variant="secondary"
               onClick={() => api.runProgram('75fm.py')}
               className="flex flex-col items-center py-3 sm:py-4 h-auto"
+              disabled={!isLoggedIn}
+              title={!isLoggedIn ? 'Login required' : undefined}
             >
-              <Music className="w-5 h-5 sm:w-6 sm:h-6 mb-1 sm:mb-2" />
+              {!isLoggedIn ? <Lock className="w-5 h-5 sm:w-6 sm:h-6 mb-1 sm:mb-2" /> : <Music className="w-5 h-5 sm:w-6 sm:h-6 mb-1 sm:mb-2" />}
               <span className="text-xs sm:text-sm">Music 75%</span>
             </Button>
             <Button
               variant="secondary"
               onClick={() => api.runProgram('85ad.py')}
               className="flex flex-col items-center py-3 sm:py-4 h-auto"
+              disabled={!isLoggedIn}
+              title={!isLoggedIn ? 'Login required' : undefined}
             >
-              <Volume2 className="w-5 h-5 sm:w-6 sm:h-6 mb-1 sm:mb-2" />
+              {!isLoggedIn ? <Lock className="w-5 h-5 sm:w-6 sm:h-6 mb-1 sm:mb-2" /> : <Volume2 className="w-5 h-5 sm:w-6 sm:h-6 mb-1 sm:mb-2" />}
               <span className="text-xs sm:text-sm">Ad 85%</span>
             </Button>
             <Button
               variant="secondary"
               onClick={() => api.runProgram('75parking.py')}
               className="flex flex-col items-center py-3 sm:py-4 h-auto"
+              disabled={!isLoggedIn}
+              title={!isLoggedIn ? 'Login required' : undefined}
             >
-              <Speaker className="w-5 h-5 sm:w-6 sm:h-6 mb-1 sm:mb-2" />
+              {!isLoggedIn ? <Lock className="w-5 h-5 sm:w-6 sm:h-6 mb-1 sm:mb-2" /> : <Speaker className="w-5 h-5 sm:w-6 sm:h-6 mb-1 sm:mb-2" />}
               <span className="text-xs sm:text-sm">Parking 75%</span>
             </Button>
             <Button
               variant="danger"
               onClick={handlePause}
               className="flex flex-col items-center py-3 sm:py-4 h-auto"
+              disabled={!isLoggedIn}
+              title={!isLoggedIn ? 'Login required' : undefined}
             >
-              <Pause className="w-5 h-5 sm:w-6 sm:h-6 mb-1 sm:mb-2" />
+              {!isLoggedIn ? <Lock className="w-5 h-5 sm:w-6 sm:h-6 mb-1 sm:mb-2" /> : <Pause className="w-5 h-5 sm:w-6 sm:h-6 mb-1 sm:mb-2" />}
               <span className="text-xs sm:text-sm">Pause All</span>
             </Button>
           </div>

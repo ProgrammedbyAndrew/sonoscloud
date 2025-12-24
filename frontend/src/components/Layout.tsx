@@ -1,13 +1,17 @@
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard,
   Calendar,
   Music,
   Speaker,
-  Truck
+  Truck,
+  Lock,
+  LogOut
 } from 'lucide-react';
 import { clsx } from 'clsx';
+import { useAuth } from '../context/AuthContext';
+import { LoginModal } from './LoginModal';
 
 interface LayoutProps {
   children: ReactNode;
@@ -22,9 +26,14 @@ const navItems = [
 
 export function Layout({ children }: LayoutProps) {
   const location = useLocation();
+  const { isLoggedIn, logout } = useAuth();
+  const [showLoginModal, setShowLoginModal] = useState(false);
 
   return (
     <div className="min-h-screen bg-gray-950 text-white">
+      {/* Login Modal */}
+      <LoginModal isOpen={showLoginModal} onClose={() => setShowLoginModal(false)} />
+
       {/* Header */}
       <header className="fixed top-0 left-0 right-0 h-14 sm:h-16 bg-gray-900 border-b border-gray-800 z-50">
         <div className="h-full px-3 sm:px-4 flex items-center justify-between">
@@ -35,8 +44,24 @@ export function Layout({ children }: LayoutProps) {
               <p className="text-[10px] sm:text-xs text-gray-400 hidden sm:block">Custom Music Software V.1</p>
             </div>
           </div>
-          <div className="hidden sm:flex items-center gap-2">
-            <span className="text-sm text-gray-400">Control Panel</span>
+          <div className="flex items-center gap-2">
+            {isLoggedIn ? (
+              <button
+                onClick={logout}
+                className="flex items-center gap-2 px-3 py-1.5 bg-green-600/20 text-green-400 rounded-lg hover:bg-green-600/30 transition-colors"
+              >
+                <LogOut className="w-4 h-4" />
+                <span className="text-sm hidden sm:inline">Logout</span>
+              </button>
+            ) : (
+              <button
+                onClick={() => setShowLoginModal(true)}
+                className="flex items-center gap-2 px-3 py-1.5 bg-gray-700 text-gray-300 rounded-lg hover:bg-gray-600 transition-colors"
+              >
+                <Lock className="w-4 h-4" />
+                <span className="text-sm hidden sm:inline">Admin</span>
+              </button>
+            )}
           </div>
         </div>
       </header>
