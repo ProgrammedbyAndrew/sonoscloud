@@ -235,8 +235,9 @@ class SchedulerService:
                 use_volume = vol_override if vol_override else volume
                 await sonos_api.load_favorite(group_id, favorite_id)
 
-                # For fire programs, use per-speaker volumes to mute STAGE and RIGHT_POLE_01
-                if is_fire_program:
+                # When fire_show_mode is active OR running a fire program,
+                # use per-speaker volumes to mute STAGE and RIGHT_POLE_01
+                if self.fire_show_mode or is_fire_program:
                     is_last = (i == len(favorite_sequence) - 1)
                     fire_volumes = self._get_fire_show_volumes(volume, is_announcement=not is_last)
                     await sonos_api.set_per_speaker_volumes(fire_volumes)
