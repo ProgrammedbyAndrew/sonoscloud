@@ -230,11 +230,15 @@ class SonosAPI:
 
     async def get_all_volumes(self) -> dict:
         """Get volumes for all speakers"""
+        import logging
+        logger = logging.getLogger(__name__)
+
         async def get_vol(name: str, player_id: str):
             try:
                 vol = await self.get_player_volume(player_id)
                 return (name, vol)
-            except:
+            except Exception as e:
+                logger.error(f"Error getting volume for {name}: {e}")
                 return (name, None)
 
         tasks = [get_vol(name, pid) for name, pid in settings.speakers.items()]
