@@ -262,16 +262,23 @@ class SchedulerService:
     def _get_favorite_sequence(self, program_type: str) -> list[tuple[str, int, Optional[int]]]:
         """Get the favorite playlist sequence for a program type
         Returns list of (favorite_id, sleep_duration, volume_override)
+        Based on original scripts - timings match audio clip durations
         """
-        # Default sequences based on the existing scripts
         sequences = {
-            "ad": [("28", 35, 85), ("29", 39, 85), ("33", 0, None)],
-            "fm": [("28", 35, 85), ("29", 39, 85), ("33", 0, None)],
-            "sm": [("28", 14, 85), ("35", 15, 85), ("33", 0, None)],
-            "parking": [("30", 30, 85), ("33", 0, None)],
-            "TIGS": [("31", 45, 85), ("33", 0, None)],
-            "adfire": [("28", 35, 85), ("29", 39, 85), ("34", 0, None)],
-            "fireparking": [("30", 30, 85), ("34", 0, None)],
+            # Business Ad: 75ad.py - playlist 32 (14s), 35 (15s), then music
+            "ad": [("32", 14, 85), ("35", 15, 85), ("33", 0, None)],
+            # Flea Market Ad: 75fm.py - same as ad
+            "fm": [("32", 14, 85), ("35", 15, 85), ("33", 0, None)],
+            # Social Media: 75sm.py - playlist 30 (23s), 31 (27s), then music
+            "sm": [("30", 23, 85), ("31", 27, 85), ("33", 0, None)],
+            # Parking: 75parking.py - playlist 41 (17s), 44 (24s), then music
+            "parking": [("41", 17, 85), ("44", 24, 85), ("33", 0, None)],
+            # Gift Shop (TIGS): 75TIGS.py - playlist 43 (35s), then music
+            "TIGS": [("43", 35, 85), ("33", 0, None)],
+            # Fire Show Ad: 85adfire.py - playlist 40 (22s), then music
+            "adfire": [("40", 22, 85), ("33", 0, None)],
+            # Fire Parking: same pattern as parking but stays on fire playlist
+            "fireparking": [("41", 17, 85), ("44", 24, 85), ("34", 0, None)],
         }
         return sequences.get(program_type, [("33", 0, None)])
 
