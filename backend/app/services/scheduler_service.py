@@ -277,8 +277,8 @@ class SchedulerService:
             "TIGS": [("43", 35, 85), ("33", 0, None)],
             # Fire Show Ad: 85adfire.py - playlist 40 (22s), then music
             "adfire": [("40", 22, 85), ("33", 0, None)],
-            # Fire Parking: same pattern as parking but stays on fire playlist
-            "fireparking": [("41", 17, 85), ("44", 24, 85), ("34", 0, None)],
+            # Fire Parking: 75fireparking.py - playlist 41 (17s), 44 (24s), then music
+            "fireparking": [("41", 17, 85), ("44", 24, 85), ("33", 0, None)],
         }
         return sequences.get(program_type, [("33", 0, None)])
 
