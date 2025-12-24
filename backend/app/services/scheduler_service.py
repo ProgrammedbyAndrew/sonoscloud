@@ -188,6 +188,25 @@ class SchedulerService:
         logger.info(f"Loaded {job_count} scheduled jobs from database")
         return job_count
 
+    def _get_fire_show_volumes(self, base_volume: int, is_announcement: bool = True) -> dict:
+        """Get per-speaker volumes for fire show - mutes STAGE and RIGHT_POLE_01"""
+        vol = 85 if is_announcement else base_volume
+        return {
+            "BATHROOM_DOORS": vol,
+            "STAGE": 1,  # Muted near fire
+            "RIGHT_POLE_01": 1,  # Muted near fire
+            "RIGHT_POLE_02": vol,
+            "RIGHT_POLE_03": vol,
+            "LEFT_POLE_01": vol,
+            "LEFT_POLE_02": vol,
+            "LEFT_POLE_03": vol,
+            "CENTER_POLE": vol
+        }
+
+    def _is_fire_program(self, program_type: str) -> bool:
+        """Check if this is a fire show program that needs zone muting"""
+        return program_type in ["adfire", "fireparking"]
+
     async def run_program(self, program_name: str):
         """Execute a program"""
         self.current_program = program_name
@@ -207,14 +226,23 @@ class SchedulerService:
 
             # Get favorite IDs based on program type
             favorite_sequence = self._get_favorite_sequence(program_type)
+            is_fire_program = self._is_fire_program(program_type)
 
             # Execute the program
             group_id = await sonos_api.ensure_group()
 
-            for favorite_id, duration, vol_override in favorite_sequence:
+            for i, (favorite_id, duration, vol_override) in enumerate(favorite_sequence):
                 use_volume = vol_override if vol_override else volume
                 await sonos_api.load_favorite(group_id, favorite_id)
-                await sonos_api.set_all_volumes(use_volume)
+
+                # For fire programs, use per-speaker volumes to mute STAGE and RIGHT_POLE_01
+                if is_fire_program:
+                    is_last = (i == len(favorite_sequence) - 1)
+                    fire_volumes = self._get_fire_show_volumes(volume, is_announcement=not is_last)
+                    await sonos_api.set_per_speaker_volumes(fire_volumes)
+                else:
+                    await sonos_api.set_all_volumes(use_volume)
+
                 await sonos_api.play(group_id)
 
                 if duration > 0:

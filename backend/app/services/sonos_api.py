@@ -237,6 +237,20 @@ class SonosAPI:
         await asyncio.gather(*tasks)
         return True
 
+    async def set_per_speaker_volumes(self, volumes: dict) -> bool:
+        """Set individual volumes per speaker by name
+        volumes: dict mapping speaker name to volume level
+        e.g. {"STAGE": 1, "BATHROOM_DOORS": 85, ...}
+        """
+        tasks = []
+        for speaker_name, volume in volumes.items():
+            player_id = settings.speakers.get(speaker_name)
+            if player_id:
+                tasks.append(self.set_player_volume(player_id, volume))
+        if tasks:
+            await asyncio.gather(*tasks)
+        return True
+
     async def set_group_volume(self, group_id: str, volume: int) -> bool:
         """Set volume for a group"""
         session = await self.get_session()
