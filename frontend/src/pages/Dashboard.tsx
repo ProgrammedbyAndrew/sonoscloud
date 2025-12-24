@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Play, Pause, Volume2, RefreshCw, Clock, Speaker, Music, Flame, Power } from 'lucide-react';
+import { Play, Pause, Volume2, RefreshCw, Clock, Speaker, Music, Flame, Power, Activity, CheckCircle, XCircle } from 'lucide-react';
 import { Card, CardHeader, CardContent } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
@@ -7,6 +7,14 @@ import { Slider } from '../components/ui/Slider';
 import { api } from '../api/client';
 import type { SystemStatus, PlaybackStatus } from '../types';
 import { clsx } from 'clsx';
+
+interface LogEntry {
+  id: number;
+  program_name: string;
+  executed_at: string;
+  status: 'success' | 'error';
+  error_message: string | null;
+}
 
 // Program type display names
 const PROGRAM_TYPE_NAMES: Record<string, string> = {
@@ -33,9 +41,23 @@ function getProgramDisplayName(programName: string): string {
   return `${typeName} @ ${volume}%`;
 }
 
+function formatTimeAgo(dateString: string): string {
+  const date = new Date(dateString);
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMs / 3600000);
+
+  if (diffMins < 1) return 'Just now';
+  if (diffMins < 60) return `${diffMins}m ago`;
+  if (diffHours < 24) return `${diffHours}h ago`;
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+
 export function Dashboard() {
   const [systemStatus, setSystemStatus] = useState<SystemStatus | null>(null);
   const [playbackStatus, setPlaybackStatus] = useState<PlaybackStatus | null>(null);
+  const [logs, setLogs] = useState<LogEntry[]>([]);
   const [volume, setVolume] = useState(75);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
@@ -43,12 +65,14 @@ export function Dashboard() {
 
   const fetchStatus = async () => {
     try {
-      const [system, playback] = await Promise.all([
+      const [system, playback, logsData] = await Promise.all([
         api.getSystemStatus(),
         api.getPlaybackStatus(),
+        api.getLogs(15),
       ]);
       setSystemStatus(system as SystemStatus);
       setPlaybackStatus(playback as PlaybackStatus);
+      setLogs((logsData as { logs: LogEntry[] }).logs || []);
 
       // Get fire show mode from system status
       const sysStatus = system as SystemStatus;
@@ -414,6 +438,57 @@ export function Dashboard() {
               <span className="text-xs sm:text-sm">Pause All</span>
             </Button>
           </div>
+        </CardContent>
+      </Card>
+
+      {/* Activity Log */}
+      <Card>
+        <CardHeader className="pb-2">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Activity className="w-5 h-5 text-orange-500" />
+              <h2 className="font-semibold text-sm sm:text-base">Activity Log</h2>
+            </div>
+            <span className="text-xs text-gray-500">Last 15 events</span>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-1 max-h-64 overflow-y-auto">
+            {logs.length === 0 ? (
+              <p className="text-sm text-gray-500 text-center py-4">No activity yet</p>
+            ) : (
+              logs.map((log) => (
+                <div
+                  key={log.id}
+                  className={clsx(
+                    'flex items-center gap-2 px-2 py-1.5 rounded-lg text-sm',
+                    log.status === 'success'
+                      ? 'bg-green-500/10 border-l-2 border-green-500'
+                      : 'bg-red-500/10 border-l-2 border-red-500'
+                  )}
+                >
+                  {log.status === 'success' ? (
+                    <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0" />
+                  ) : (
+                    <XCircle className="w-4 h-4 text-red-500 flex-shrink-0" />
+                  )}
+                  <span className="flex-1 truncate font-medium">
+                    {getProgramDisplayName(log.program_name)}
+                  </span>
+                  <span className="text-xs text-gray-500 flex-shrink-0">
+                    {formatTimeAgo(log.executed_at)}
+                  </span>
+                </div>
+              ))
+            )}
+          </div>
+          {logs.some(log => log.status === 'error') && (
+            <div className="mt-3 p-2 bg-red-500/10 rounded-lg">
+              <p className="text-xs text-red-400">
+                <strong>Recent errors detected.</strong> Check Sonos connection.
+              </p>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
