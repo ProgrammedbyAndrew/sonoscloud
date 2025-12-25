@@ -65,6 +65,11 @@ class SonosAPI:
             await self.refresh_access_token()
         return self.access_token
 
+    def invalidate_token(self):
+        """Force token to be refreshed on next request"""
+        self.access_token = None
+        self.token_expires_at = 0
+
     async def get_headers(self) -> dict:
         """Get headers with valid auth token"""
         token = await self.ensure_valid_token()
@@ -73,50 +78,55 @@ class SonosAPI:
             "Authorization": f"Bearer {token}"
         }
 
+    async def _request_with_retry(self, method: str, url: str, **kwargs) -> aiohttp.ClientResponse:
+        """Make a request with automatic retry on 401 errors"""
+        session = await self.get_session()
+        headers = await self.get_headers()
+
+        async with session.request(method, url, headers=headers, ssl=ssl_context, **kwargs) as response:
+            if response.status == 401:
+                # Token is invalid, refresh and retry once
+                self.invalidate_token()
+                headers = await self.get_headers()
+                async with session.request(method, url, headers=headers, ssl=ssl_context, **kwargs) as retry_response:
+                    text = await retry_response.text()
+                    if retry_response.status != 200:
+                        raise Exception(f"Request failed after retry: {retry_response.status} - {text}")
+                    try:
+                        return await retry_response.json()
+                    except:
+                        return {"status": "ok"}
+
+            text = await response.text()
+            if response.status != 200:
+                raise Exception(f"Request failed: {response.status} - {text}")
+            try:
+                return await response.json()
+            except:
+                return {"status": "ok"}
+
     async def get_household_id(self) -> str:
         """Get the household ID"""
         if self.household_id:
             return self.household_id
 
-        session = await self.get_session()
-        headers = await self.get_headers()
-        url = "https://api.ws.sonos.com/control/api/v1/households"
-
-        async with session.get(url, headers=headers, ssl=ssl_context) as response:
-            if response.status != 200:
-                text = await response.text()
-                raise Exception(f"Error getting households: {response.status} - {text}")
-            data = await response.json()
-            self.household_id = data["households"][0]["id"]
-            return self.household_id
+        data = await self._request_with_retry("GET", "https://api.ws.sonos.com/control/api/v1/households")
+        self.household_id = data["households"][0]["id"]
+        return self.household_id
 
     async def get_groups(self) -> list[dict]:
         """Get all speaker groups"""
-        session = await self.get_session()
-        headers = await self.get_headers()
         household_id = await self.get_household_id()
         url = f"https://api.ws.sonos.com/control/api/v1/households/{household_id}/groups"
-
-        async with session.get(url, headers=headers, ssl=ssl_context) as response:
-            if response.status != 200:
-                text = await response.text()
-                raise Exception(f"Error getting groups: {response.status} - {text}")
-            data = await response.json()
-            return data.get("groups", [])
+        data = await self._request_with_retry("GET", url)
+        return data.get("groups", [])
 
     async def get_players(self) -> list[dict]:
         """Get all players in the household"""
-        session = await self.get_session()
-        headers = await self.get_headers()
         household_id = await self.get_household_id()
         url = f"https://api.ws.sonos.com/control/api/v1/households/{household_id}/groups"
-
-        async with session.get(url, headers=headers, ssl=ssl_context) as response:
-            if response.status != 200:
-                text = await response.text()
-                raise Exception(f"Error getting players: {response.status} - {text}")
-            data = await response.json()
-            return data.get("players", [])
+        data = await self._request_with_retry("GET", url)
+        return data.get("players", [])
 
     async def find_existing_group(self, player_ids: list[str]) -> Optional[str]:
         """Find an existing group containing all specified players"""
@@ -141,22 +151,11 @@ class SonosAPI:
 
     async def create_group(self, player_ids: list[str]) -> str:
         """Create a new group with specified players"""
-        session = await self.get_session()
-        headers = await self.get_headers()
-        headers["accept"] = "application/json"
         household_id = await self.get_household_id()
         url = f"https://api.ws.sonos.com/control/api/v1/households/{household_id}/groups/createGroup"
         payload = {"playerIds": player_ids}
 
-        async with session.post(url, headers=headers, json=payload, ssl=ssl_context) as response:
-            if response.status != 200:
-                text = await response.text()
-                raise Exception(f"Error creating group: {response.status} - {text}")
-            try:
-                data = await response.json()
-            except Exception:
-                data = {}
-
+        data = await self._request_with_retry("POST", url, json=payload)
         group_id = data.get("id")
         if group_id:
             self.current_group_id = group_id
@@ -190,43 +189,23 @@ class SonosAPI:
 
     async def get_favorites(self) -> list[dict]:
         """Get all favorites/playlists"""
-        session = await self.get_session()
-        headers = await self.get_headers()
         household_id = await self.get_household_id()
         url = f"https://api.ws.sonos.com/control/api/v1/households/{household_id}/favorites"
-
-        async with session.get(url, headers=headers, ssl=ssl_context) as response:
-            if response.status != 200:
-                text = await response.text()
-                raise Exception(f"Error getting favorites: {response.status} - {text}")
-            data = await response.json()
-            return data.get("items", [])
+        data = await self._request_with_retry("GET", url)
+        return data.get("items", [])
 
     async def load_favorite(self, group_id: str, favorite_id: str) -> bool:
         """Load a favorite playlist into a group"""
-        session = await self.get_session()
-        headers = await self.get_headers()
         url = f"https://api.ws.sonos.com/control/api/v1/groups/{group_id}/favorites"
         payload = {"favoriteId": favorite_id}
-
-        async with session.post(url, headers=headers, json=payload, ssl=ssl_context) as response:
-            if response.status != 200:
-                text = await response.text()
-                raise Exception(f"Error loading favorite: {response.status} - {text}")
-            return True
+        await self._request_with_retry("POST", url, json=payload)
+        return True
 
     async def get_player_volume(self, player_id: str) -> int:
         """Get volume for a specific player"""
-        session = await self.get_session()
-        headers = await self.get_headers()
         url = f"https://api.ws.sonos.com/control/api/v1/players/{player_id}/playerVolume"
-
-        async with session.get(url, headers=headers, ssl=ssl_context) as response:
-            if response.status != 200:
-                text = await response.text()
-                raise Exception(f"Error getting volume: {response.status} - {text}")
-            data = await response.json()
-            return data.get("volume", 0)
+        data = await self._request_with_retry("GET", url)
+        return data.get("volume", 0)
 
     async def get_all_volumes(self) -> dict:
         """Get volumes for all speakers"""
@@ -247,16 +226,10 @@ class SonosAPI:
 
     async def set_player_volume(self, player_id: str, volume: int) -> bool:
         """Set volume for a specific player"""
-        session = await self.get_session()
-        headers = await self.get_headers()
         url = f"https://api.ws.sonos.com/control/api/v1/players/{player_id}/playerVolume"
         payload = {"volume": volume}
-
-        async with session.post(url, headers=headers, json=payload, ssl=ssl_context) as response:
-            if response.status != 200:
-                text = await response.text()
-                raise Exception(f"Error setting volume: {response.status} - {text}")
-            return True
+        await self._request_with_retry("POST", url, json=payload)
+        return True
 
     async def set_all_volumes(self, volume: int) -> bool:
         """Set volume for all speakers"""
@@ -283,64 +256,32 @@ class SonosAPI:
 
     async def set_group_volume(self, group_id: str, volume: int) -> bool:
         """Set volume for a group"""
-        session = await self.get_session()
-        headers = await self.get_headers()
         url = f"https://api.ws.sonos.com/control/api/v1/groups/{group_id}/groupVolume"
         payload = {"volume": volume}
-
-        async with session.post(url, headers=headers, json=payload, ssl=ssl_context) as response:
-            if response.status != 200:
-                text = await response.text()
-                raise Exception(f"Error setting group volume: {response.status} - {text}")
-            return True
+        await self._request_with_retry("POST", url, json=payload)
+        return True
 
     async def play(self, group_id: str) -> bool:
         """Start playback for a group"""
-        session = await self.get_session()
-        headers = await self.get_headers()
         url = f"https://api.ws.sonos.com/control/api/v1/groups/{group_id}/playback/play"
-
-        async with session.post(url, headers=headers, ssl=ssl_context) as response:
-            if response.status != 200:
-                text = await response.text()
-                raise Exception(f"Playback error: {response.status} - {text}")
-            return True
+        await self._request_with_retry("POST", url)
+        return True
 
     async def pause(self, group_id: str) -> bool:
         """Pause playback for a group"""
-        session = await self.get_session()
-        headers = await self.get_headers()
         url = f"https://api.ws.sonos.com/control/api/v1/groups/{group_id}/playback/pause"
-
-        async with session.post(url, headers=headers, ssl=ssl_context) as response:
-            if response.status != 200:
-                text = await response.text()
-                raise Exception(f"Pause error: {response.status} - {text}")
-            return True
+        await self._request_with_retry("POST", url)
+        return True
 
     async def get_playback_status(self, group_id: str) -> dict:
         """Get playback status for a group"""
-        session = await self.get_session()
-        headers = await self.get_headers()
         url = f"https://api.ws.sonos.com/control/api/v1/groups/{group_id}/playback"
-
-        async with session.get(url, headers=headers, ssl=ssl_context) as response:
-            if response.status != 200:
-                text = await response.text()
-                raise Exception(f"Error getting playback status: {response.status} - {text}")
-            return await response.json()
+        return await self._request_with_retry("GET", url)
 
     async def get_playback_metadata(self, group_id: str) -> dict:
         """Get current track metadata for a group"""
-        session = await self.get_session()
-        headers = await self.get_headers()
         url = f"https://api.ws.sonos.com/control/api/v1/groups/{group_id}/playbackMetadata"
-
-        async with session.get(url, headers=headers, ssl=ssl_context) as response:
-            if response.status != 200:
-                text = await response.text()
-                raise Exception(f"Error getting metadata: {response.status} - {text}")
-            return await response.json()
+        return await self._request_with_retry("GET", url)
 
     async def play_favorite_with_volume(self, favorite_id: str, volume: int) -> bool:
         """Load a favorite and play it with specified volume"""
