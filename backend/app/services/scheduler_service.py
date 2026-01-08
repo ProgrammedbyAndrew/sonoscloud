@@ -35,6 +35,7 @@ class SchedulerService:
         self.current_program: Optional[str] = None
         self.is_running = False
         self.fire_show_mode = False  # Fire Show Mode state
+        self.paused_until: Optional[datetime] = None  # Pause until this time (midnight)
         self._fire_show_job_id = "fire_show_hourly"
         self._midnight_reset_job_id = "midnight_reset"
 
@@ -135,6 +136,57 @@ class SchedulerService:
             "interval": "Every hour"
         }
 
+    async def pause_until_midnight(self):
+        """Pause all scheduled programs until midnight"""
+        now = datetime.now(self.timezone)
+        # Set pause until midnight (00:00) of the next day
+        midnight = now.replace(hour=0, minute=0, second=0, microsecond=0)
+        if now >= midnight:
+            # If we're past midnight today, pause until tomorrow's midnight
+            from datetime import timedelta
+            midnight = midnight + timedelta(days=1)
+        self.paused_until = midnight
+        logger.info(f"Scheduler paused until {midnight.strftime('%Y-%m-%d %H:%M:%S')}")
+
+        # Also pause Sonos playback immediately
+        await sonos_api.pause_all()
+
+        return {
+            "status": "paused",
+            "paused_until": midnight.isoformat(),
+            "message": f"Paused until midnight ({midnight.strftime('%H:%M')})"
+        }
+
+    def resume_playback(self):
+        """Clear the pause state to resume scheduled programs"""
+        was_paused = self.paused_until is not None
+        self.paused_until = None
+        if was_paused:
+            logger.info("Scheduler resumed - pause cleared")
+        return {"status": "resumed", "message": "Playback resumed, scheduler active"}
+
+    def is_paused(self) -> bool:
+        """Check if scheduler is currently paused"""
+        if self.paused_until is None:
+            return False
+        now = datetime.now(self.timezone)
+        if now >= self.paused_until:
+            # Pause period has expired, clear it
+            self.paused_until = None
+            logger.info("Pause period expired, scheduler resuming")
+            return False
+        return True
+
+    def get_pause_status(self) -> dict:
+        """Get current pause status"""
+        if self.is_paused():
+            return {
+                "is_paused": True,
+                "paused_until": self.paused_until.isoformat(),
+                "paused_until_display": self.paused_until.strftime("%H:%M")
+            }
+        return {"is_paused": False, "paused_until": None, "paused_until_display": None}
+
     async def load_schedule_from_db(self):
         """Load schedule from database and register jobs"""
         if not self.scheduler:
@@ -207,8 +259,18 @@ class SchedulerService:
         """Check if this is a fire show program that needs zone muting"""
         return program_type in ["adfire", "fireparking"]
 
-    async def run_program(self, program_name: str):
-        """Execute a program"""
+    async def run_program(self, program_name: str, manual: bool = False):
+        """Execute a program
+
+        Args:
+            program_name: Name of the program to run
+            manual: If True, this is a manual trigger (ignores pause state)
+        """
+        # Check if scheduler is paused (skip check for manual triggers)
+        if not manual and self.is_paused():
+            logger.info(f"Skipping program {program_name} - scheduler is paused until {self.paused_until}")
+            return
+
         self.current_program = program_name
         logger.info(f"Running program: {program_name}")
 
@@ -355,7 +417,8 @@ class SchedulerService:
             "current_program_display": self.get_program_display_name(self.current_program) if self.current_program else None,
             "job_count": len(self.scheduler.get_jobs()) if self.scheduler else 0,
             "next_job": self.get_next_job(),
-            "fire_show_mode": self.get_fire_show_status()
+            "fire_show_mode": self.get_fire_show_status(),
+            "pause_status": self.get_pause_status()
         }
 
 

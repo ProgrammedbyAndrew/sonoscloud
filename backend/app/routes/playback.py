@@ -43,6 +43,9 @@ async def get_playback_status():
         except Exception:
             pass  # Metadata not available, continue without it
 
+        # Get pause status
+        pause_status = scheduler_service.get_pause_status()
+
         return {
             "is_playing": is_playing,
             "current_program": scheduler_service.current_program,
@@ -54,7 +57,9 @@ async def get_playback_status():
             "current_volume": None,
             "group_id": group_id,
             "next_scheduled": next_job["program"] if next_job else None,
-            "next_scheduled_time": f"{next_job['day']} {next_job['time']}" if next_job else None
+            "next_scheduled_time": f"{next_job['day']} {next_job['time']}" if next_job else None,
+            "is_paused_until_midnight": pause_status["is_paused"],
+            "paused_until": pause_status["paused_until_display"]
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -64,11 +69,14 @@ async def get_playback_status():
 async def play(command: PlaybackCommand = None):
     """Start playback or play a specific program"""
     try:
+        # Clear any pause state when play is pressed
+        scheduler_service.resume_playback()
+
         group_id = await sonos_api.ensure_group()
 
         if command and command.program_name:
-            # Run specific program
-            await scheduler_service.run_program(command.program_name)
+            # Run specific program (manual trigger)
+            await scheduler_service.run_program(command.program_name, manual=True)
             return {"message": f"Playing program: {command.program_name}"}
 
         if command and command.favorite_id:
@@ -100,10 +108,10 @@ async def play_favorite(command: PlayFavoriteCommand):
 
 @router.post("/pause")
 async def pause():
-    """Pause all playback"""
+    """Pause all playback until midnight (or until play is pressed)"""
     try:
-        await sonos_api.pause_all()
-        return {"message": "Playback paused"}
+        result = await scheduler_service.pause_until_midnight()
+        return {"message": result["message"], "paused_until": result["paused_until"]}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -124,13 +132,15 @@ async def set_volume(command: VolumeCommand):
 
 @router.post("/skip")
 async def skip_to_next():
-    """Skip to next scheduled program (runs it immediately)"""
+    """Skip to next scheduled program (runs it immediately, clears pause state)"""
     try:
         next_job = scheduler_service.get_next_job()
         if not next_job:
             raise HTTPException(status_code=404, detail="No upcoming scheduled programs")
 
-        await scheduler_service.run_program(next_job["program"])
+        # Clear pause state since user is manually starting playback
+        scheduler_service.resume_playback()
+        await scheduler_service.run_program(next_job["program"], manual=True)
         return {"message": f"Skipped to: {next_job['program']}"}
 
     except Exception as e:
@@ -139,9 +149,11 @@ async def skip_to_next():
 
 @router.post("/run-program/{program_name}")
 async def run_program(program_name: str):
-    """Run a specific program immediately"""
+    """Run a specific program immediately (manual trigger, ignores pause state)"""
     try:
-        await scheduler_service.run_program(program_name)
+        # Clear pause state since user is manually starting playback
+        scheduler_service.resume_playback()
+        await scheduler_service.run_program(program_name, manual=True)
         return {"message": f"Running program: {program_name}"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

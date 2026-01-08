@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Play, Pause, Volume2, RefreshCw, Clock, Speaker, Music, Flame, Power, Activity, CheckCircle, XCircle, Lock } from 'lucide-react';
+import { Play, Pause, Volume2, RefreshCw, Clock, Speaker, Music, Flame, Power, Activity, CheckCircle, XCircle, Lock, Moon } from 'lucide-react';
 import { Card, CardHeader, CardContent } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
@@ -225,6 +225,40 @@ export function Dashboard() {
         </CardContent>
       </Card>
 
+      {/* Paused Until Midnight Banner */}
+      {playbackStatus?.is_paused_until_midnight && (
+        <Card
+          variant="elevated"
+          className="border-2 border-blue-500 bg-gradient-to-r from-blue-950/50 to-indigo-950/50"
+        >
+          <CardContent className="py-3 sm:py-4">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
+              <div className="flex items-center gap-3 flex-1 min-w-0">
+                <div className="p-2 sm:p-3 rounded-full bg-blue-500 flex-shrink-0">
+                  <Moon className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <h2 className="text-lg sm:text-xl font-bold">Paused Until Midnight</h2>
+                  <p className="text-xs sm:text-sm text-gray-400">
+                    Scheduled programs paused until {playbackStatus.paused_until || '00:00'}
+                  </p>
+                </div>
+              </div>
+              <Button
+                variant="primary"
+                size="lg"
+                onClick={handlePlay}
+                disabled={actionLoading === 'play' || !isLoggedIn}
+                className="w-full sm:w-auto sm:min-w-[120px]"
+              >
+                <Play className="w-5 h-5 mr-2" />
+                Resume
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Now Playing - Mobile optimized */}
       <Card variant="elevated">
         <CardHeader className="pb-2">
@@ -253,11 +287,20 @@ export function Dashboard() {
               <div className="flex items-center gap-2">
                 {playbackStatus?.is_playing ? (
                   <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse flex-shrink-0" />
+                ) : playbackStatus?.is_paused_until_midnight ? (
+                  <span className="w-2 h-2 rounded-full bg-blue-500 flex-shrink-0" />
                 ) : (
                   <span className="w-2 h-2 rounded-full bg-gray-500 flex-shrink-0" />
                 )}
-                <span className="text-xs text-gray-400 uppercase">
-                  {playbackStatus?.is_playing ? 'Playing' : 'Paused'}
+                <span className={clsx(
+                  'text-xs uppercase',
+                  playbackStatus?.is_paused_until_midnight ? 'text-blue-400' : 'text-gray-400'
+                )}>
+                  {playbackStatus?.is_playing
+                    ? 'Playing'
+                    : playbackStatus?.is_paused_until_midnight
+                      ? 'Paused until midnight'
+                      : 'Paused'}
                 </span>
               </div>
 

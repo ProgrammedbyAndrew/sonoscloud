@@ -66,6 +66,8 @@ export interface PlaybackStatus {
   album: string | null;
   image_url: string | null;
   station: string | null;
+  is_paused_until_midnight: boolean;
+  paused_until: string | null;
 }
 
 // System Types
