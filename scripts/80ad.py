@@ -218,7 +218,7 @@ async def main():
 
 
         # 2. Main Playlist: Load favorite playlist (ID "34") and set volumes concurrently.
-        favorite_playlist_id_main = "33"
+        favorite_playlist_id_main = "36"
         await load_favorite_playlist(group_id, favorite_playlist_id_main, access_token, session)
         main_tasks = [
             set_player_volume(info["id"], main_volumes[name], access_token, session)

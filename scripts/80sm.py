@@ -223,7 +223,7 @@ async def main():
         await asyncio.sleep(39)  # Wait for the announcement to finish
 
         # 3. Main Playlist: (Favorite Playlist "36")
-        favorite_playlist_id_main = "33"
+        favorite_playlist_id_main = "36"
         await load_favorite_playlist(group_id, favorite_playlist_id_main, access_token, session)
         await asyncio.gather(*[
             set_player_volume(info["id"], main_volumes[name], access_token, session)
